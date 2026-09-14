@@ -46,25 +46,30 @@ Provoz musí být zdarma.
 
 ## 4. Vizuální styl
 
-Černo-růžová, dark-first. Zpracovat pomocí skillu `design-taste-frontend`, ne jako generický shadcn default.
-
-Návrh tokenů (upřesní se při implementaci):
+Černo-růžová, dark-first. Plný vizuální směr je v sekci „Vizuální směr" implementačního plánu a je pro implementaci závazný — tady je shrnutí a zdůvodnění.
 
 ```
---bg          #0A0A0B   plocha stránky
---surface     #141417   karty, panely
---surface-2   #1D1D21   hover, zvýraznění
---border      #2A2A30
---text        #F4F4F5
---text-muted  #8A8A93
---accent      #FF2D78   růžová — primární akce, zvýraznění
---accent-dim  #C4165A   hover stavu accentu
---ok          #34D399   zaplaceno, výhra
---warn        #FBBF24   nezaplaceno
---danger      #F87171   prohra, zrušený trénink
+--ink         #120A16   plocha stránky — tmavý lilek, ne charcoal
+--ink-raised  #1C1020   vyvýšené plochy
+--rule        #32213A   linky
+--chalk       #F6F1F4   text, teple lomená bílá
+--chalk-dim   #9B8DA3   vedlejší text, vyřízené položky
+--pink        #FF2E7E   jedno číslo na obrazovku + primární akce
+--pink-deep   #B8145A   stisknutý stav
+--danger      #FF5C5C   jen destruktivní potvrzení
 ```
 
-Zásady: růžová je akcent, ne výplň — používá se pro primární akci, aktivní stav a klíčové číslo na stránce, ne pro každý prvek. Typografie s výrazným kontrastem velikostí (částky a statistiky velké, popisky malé). Mobil je primární zařízení — docházka se odklikává na telefonu.
+**Proč lilek místo černé.** Původní návrh `#0A0A0B` byl neutrální charcoal s růžovou nalepenou navrch — kombinace, kterou dnes vygeneruje kdejaký nástroj a která nedrží pohromadě. Tmavá s odstínem sdíleným s růžovou je volba, ne výchozí stav.
+
+**Proč chybí zelená a oranžová.** Zaplaceno/nezaplaceno se nabízí udělat semaforem, ale to je nejgeneričtější možné řešení a rozbilo by dvoubarevnost. Místo toho nezaplaceno svítí růžově a zaplaceno zešedne. Obrazovka plateb tak obsahuje přesně tolik růžové, kolik zbývá vyřídit — když je zaplaceno všechno, je celá tichá.
+
+**Typografie:** jedna rodina, **Archivo** (variabilní, osy váhy i šířky). Roztažený těžký řez pro čísla a nadpisy — vizuálně dres a výsledková tabule; normální řez pro text. Dva fonty by na aplikaci o pěti obrazovkách byly parádička; osa šířky dá kontrast bez nich.
+
+**Layout:** linkovaný zápis, ne karty. Docházka i platby jsou tabulka jmen × hodnot, tedy přesně to, co si týmy vedou na papíře. Zaoblení má jen hero blok a QR karta, takže poloměr nese informaci „tohle je samostatný objekt" místo aby byl dekorací na všem.
+
+**Hero:** domovská obrazovka otevírá jedním číslem, které tě zajímá — kolik dlužíš, nebo kdy je nejbližší trénink. Ne řadou statistických dlaždic.
+
+Mobil je primární zařízení. Docházka se odklikává na telefonu v hale.
 
 ## 5. Datový model
 

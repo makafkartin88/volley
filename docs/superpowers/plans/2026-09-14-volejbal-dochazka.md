@@ -21,11 +21,19 @@
 - Každá Server Action, která zapisuje, **sama ověří admin cookie**. Middleware není jediná bariéra.
 - Testují se **pouze soubory v `src/domain/`**. UI se netestuje automatizovaně.
 - Paleta (CSS proměnné, definované jednou v `globals.css`):
-  `--bg #0A0A0B`, `--surface #141417`, `--surface-2 #1D1D21`, `--border #2A2A30`,
-  `--text #F4F4F5`, `--text-muted #8A8A93`, `--accent #FF2D78`, `--accent-dim #C4165A`,
-  `--ok #34D399`, `--warn #FBBF24`, `--danger #F87171`.
-- Růžová `--accent` je akcent, ne výplň: primární tlačítko, aktivní stav, jedno klíčové číslo na stránce. Nikdy ne jako pozadí velké plochy.
+  `--ink #120A16`, `--ink-raised #1C1020`, `--rule #32213A`,
+  `--chalk #F6F1F4`, `--chalk-dim #9B8DA3`,
+  `--pink #FF2E7E`, `--pink-deep #B8145A`, `--danger #FF5C5C`.
+  **Žádná zelená ani oranžová.** Zdůvodnění a použití viz „Vizuální směr" níže.
+- **Jedno růžové číslo na obrazovku.** Růžová označuje to jediné, kvůli čemu jsi stránku otevřel, plus primární akci. Nikde jinde.
+- **Tabulární číslice všude, kde jsou čísla** (`font-variant-numeric: tabular-nums`). Částky ve sloupci se musí zarovnat na desítky.
 - Primární zařízení je **mobil**. Každá admin obrazovka musí být použitelná jednou rukou na 390px šířky.
+- **Zakázané vzory** (typické tells generovaného designu, nepoužívej ani jednou):
+  ALL-CAPS eyebrow popisky nad nadpisy · číslované značky `01 / 02 / 03` · šipka `→`
+  v textu tlačítek a odkazů · meta řetězce spojené středovými tečkami `A · B · C` ·
+  zvýraznění jednoho slova v nadpisu jinou barvou nebo kurzivou · stejný `border-radius`
+  a stejný měkký šedý stín na všem · fade-and-slide-up animace při scrollu ·
+  monospace font pro malé datové popisky.
 - Commituj po každém dokončeném kroku, kde to plán říká.
 
 ---
@@ -1235,15 +1243,141 @@ git commit -m "feat(auth): přihlášení organizátora přes PIN a podepsanou c
   - `formatWinRate(rate: number | null): string` — `"75 %"` nebo `"—"`
   - komponenty `<PageHeader title subtitle? action? />`, `<StatCard label value hint? tone? />`, `<Money value />`
 
-**Pozor:** Tenhle task rozhoduje, jestli appka bude vypadat dobře, nebo jako shadcn demo. Před psaním CSS **použij skill `design-taste-frontend`** a nech ho určit typografickou škálu, rytmus mezer a tvar karet. Paleta je daná v Global Constraints, ale vše ostatní je na tom skillu.
+## Vizuální směr (závazný pro Tasky 8–14)
 
-- [ ] **Step 1: Zaveď skill pro vizuální směr**
+Tohle není inspirace, je to zadání. Každý task, který kreslí UI, se k němu vrací.
 
-Vyvolej `design-taste-frontend` se zadáním: sportovní týmová aplikace, dark-first, černá plocha s růžovým akcentem, primárně mobil, hlavní obsah jsou čísla (částky, docházka, procenta). Výstupem je typografická škála, spacing a tvarosloví karet, které použiješ v dalších krocích.
+### Kdo a proč
+
+Dvacet kamarádů, co hrají 10. ligu AVL v neděli večer. Nejsou to profíci a appka nemá předstírat, že jo. Dva scénáře, nic jiného: **organizátor po tréninku odklikne, kdo byl** (na telefonu, v hale, za půl minuty) a **hráč si zjistí, kolik dluží, a zaplatí** (na telefonu, jednou za dva měsíce).
+
+### Palette
+
+| Token | Hex | Role |
+|---|---|---|
+| `--ink` | `#120A16` | plocha stránky — tmavý lilek, ne charcoal |
+| `--ink-raised` | `#1C1020` | vyvýšené plochy, řádek pod prstem |
+| `--rule` | `#32213A` | linky |
+| `--chalk` | `#F6F1F4` | text, teple lomená bílá |
+| `--chalk-dim` | `#9B8DA3` | vedlejší text, vyřízené položky |
+| `--pink` | `#FF2E7E` | jedno číslo na obrazovku + primární akce |
+| `--pink-deep` | `#B8145A` | stisknutý stav |
+| `--danger` | `#FF5C5C` | jen destruktivní potvrzení |
+
+Tmavá není neutrální šedočerná, ale **tmavý lilek** — má stejný odstín jako růžová, takže paleta drží pohromadě místo aby růžová plavala na šedi. Bílá je teple lomená, jako vápno na čarách v hale.
+
+**Zelená a oranžová v paletě nejsou, záměrně.** Zaplaceno/nezaplaceno je nejjednodušší udělat semaforem, ale je to nejgeneričtější možné řešení a rozbilo by dvoubarevnost. Místo toho: **nezaplaceno je růžové** (jediná věc, která něco chce), **zaplaceno je `--chalk-dim`** s odškrtnutím — vyřízené, tiché, ustoupí z cesty. Stejně u zápasů: **výhra plná značka v `--chalk`**, prohra obrysová v `--chalk-dim`. Obrazovka plateb tak má pouze tolik růžové, kolik je nevyřízených věcí — když je všechno zaplaceno, zešedne celá, a to je informace sama o sobě.
+
+### Typografie
+
+**Archivo** (Google Fonts, variabilní, osy `wght` 100–900 a `wdth` 62–125), přes `next/font/google`. Jedna rodina na celou aplikaci, dvě jasně odlišené role skrz osu šířky:
+
+- **Čísla a nadpisy: Archivo `wdth 112`, `wght 700–800`.** Roztažené a těžké — dres, výsledková tabule. Tohle je hlas appky.
+- **Text: Archivo `wdth 100`, `wght 400`.** Normální, čitelné, ustupuje.
+
+Jedna rodina proto, že dva fonty by na appce o pěti obrazovkách byly parádička. Osa šířky dá kontrast, který by jinak vyžadoval druhý font.
+
+Typová škála (poměr 1.5 pro displeje, 1.2 pro text):
+
+```
+--t-hero    clamp(3.5rem, 14vw, 6rem)   číslo, které je důvod otevřít stránku
+--t-title   1.5rem                       nadpis obrazovky
+--t-body    1rem                         běžný text
+--t-meta    0.8125rem                    doplňky, datumy, poznámky
+```
+
+Délka řádku max 66 znaků. Popisky **sentence case**, nikdy verzálky.
+
+### Layout: zápis, ne karty
+
+Docházka i platby jsou ze své podstaty tabulka jmen × hodnot — přesně to, co si týmy vedou na papíře. Takže **linkovaný zápis**: jména v levém sloupci, hodnoty vpravo v tabulárních číslicích, mezi řádky linka `--rule`. Žádné karty, žádné stíny, žádný `border-radius` na datových řádcích.
+
+Karta se použije jen tam, kde skutečně stojí samostatná věc: QR kód a hero číslo. Ty mají `border-radius: 20px`, nic jiného v appce ho nemá — poloměr tak nese informaci „tohle je objekt", místo aby byl dekorace na všem.
+
+```
+/  přehled                     /platby/[id]          admin/treninky/[id]
+┌────────────────────┐         ┌────────────────┐    ┌────────────────────┐
+│ neděle 20. 9.      │         │ dlužíš         │    │ ne 14. 9.   1350 Kč│
+│                    │         │                │    ├────────────────────┤
+│    1 240           │  ←hero  │   1 240        │    │ Anetka       ●     │
+│    Kč dlužíš       │         │   Kč           │    │ Daniel       ○     │
+│                    │         │                │    │ Eda          ● +1  │
+│ [ Zaplatit ]       │         │ ┌────────────┐ │    │ Filip        ●     │
+├────────────────────┤         │ │            │ │    │ …                  │
+│ 7. 9.   9 hlav 150 │         │ │  QR kód    │ │    ├────────────────────┤
+│ 31. 8.  8 hlav 169 │         │ │            │ │    │ 11 hlav → 123 Kč   │
+│ 24. 8.  zrušeno    │         │ └────────────┘ │    │ [ Uložit docházku ]│
+└────────────────────┘         │ 19-2000…/0800  │    └────────────────────┘
+                               └────────────────┘
+```
+
+Zarovnání: jména a text vlevo, **všechna čísla vpravo**. Hero číslo vlevo, ne na střed — vycentrovaný hero je default, který nic neříká, a zarovnaný na levou hranu drží rytmus se zápisem pod ním.
+
+### Hero
+
+Domovská obrazovka neotevírá řadou statistických dlaždic. Otevírá **jedním číslem, které tě zajímá**:
+
+- dlužíš-li → částka, obří, růžová, pod ní tlačítko `Zaplatit`,
+- nedlužíš-li → datum nejbližší neděle v `--chalk`, pod ním počet přihlášených.
+
+Jedno číslo, jedna věta, jedna akce. Statistiky jsou níž.
+
+### Pohyb
+
+**Jediný animovaný moment v celé aplikaci:** při ukládání docházky se počet hlav a cena na hlavu přepočítají s krátkým přechodem (150 ms), aby bylo vidět, co se změnilo. Nic jiného se nehýbe — žádné odhalování při scrollu, žádné přechody na hoveru u řádků. Respektuj `prefers-reduced-motion: reduce` a v tom případě i tenhle jeden přechod vypni.
+
+### Texty
+
+Aktivní slovesa, věta z pohledu hráče. `Uložit docházku`, ne `Odeslat`. `Zaplatit`, ne `Přejít na platbu`. Prázdné stavy vyzývají k akci: `Zatím žádný trénink. Založ první.` Chyby říkají, co se stalo a co s tím: `Špatný PIN.`, ne `Chyba autentizace`.
+
+---
+
+**Pozor:** Tenhle task rozhoduje, jestli appka bude vypadat dobře, nebo jako shadcn demo. Vizuální směr výše je závazný — neimprovizuj kolem něj.
+
+- [ ] **Step 1: Zaveď font**
+
+V `src/app/layout.tsx` načti Archivo přes `next/font/google` s variabilními osami:
+
+```ts
+import { Archivo } from 'next/font/google'
+
+const archivo = Archivo({
+  subsets: ['latin', 'latin-ext'],   // latin-ext je nutné pro ě š č ř ž ů
+  axes: ['wdth'],
+  variable: '--font-archivo',
+  display: 'swap',
+})
+```
+
+`latin-ext` nevynechávej — bez něj se česká diakritika vykreslí náhradním fontem a nadpisy se rozsypou.
 
 - [ ] **Step 2: Definuj CSS proměnné**
 
-Do `src/app/globals.css` doplň `:root` blok s proměnnými z Global Constraints a nastav `body { background: var(--bg); color: var(--text); }`. Barvy zpřístupni Tailwindu přes `@theme` (Tailwind v4), aby šlo psát `bg-surface`, `text-accent` a podobně.
+Do `src/app/globals.css` doplň `:root` blok s paletou a typovou škálou z Global Constraints a z vizuálního směru. Nastav:
+
+```css
+body {
+  background: var(--ink);
+  color: var(--chalk);
+  font-family: var(--font-archivo), system-ui, sans-serif;
+  font-variant-numeric: tabular-nums;
+}
+
+.display {
+  font-stretch: 112%;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+```
+
+Barvy zpřístupni Tailwindu přes `@theme` (Tailwind v4), aby šlo psát `bg-ink`, `text-pink`, `border-rule`.
 
 - [ ] **Step 3: Implementuj formátovací funkce**
 
@@ -1275,15 +1409,25 @@ export function formatWinRate(rate: number | null): string {
 
 Kořenový `layout.tsx`: `lang="cs"`, dark téma, horní navigace s odkazy Přehled / Tréninky / Zápasy / Platby. Na mobilu navigace jako spodní lišta, na desktopu nahoře.
 
-`admin/layout.tsx`: vlastní navigace Hráči / Tréninky / Zápasy / Vyúčtování, vizuálně odlišená od veřejné části (růžový proužek nahoře, popisek „organizátor"), plus tlačítko odhlášení volající `logoutAction`.
+`admin/layout.tsx`: vlastní navigace Hráči / Tréninky / Zápasy / Vyúčtování plus tlačítko odhlášení volající `logoutAction`. Odlišení od veřejné části udělej **plochou `--ink-raised` za navigací**, ne růžovým proužkem — růžová je rezervovaná pro to jedno číslo a primární akci, a admin lišta na každé obrazovce by ji vyplýtvala.
 
-- [ ] **Step 5: Ověř vzhled na mobilní šířce**
+Komponenty stav podle vizuálního směru: `<StatCard>` není karta se stínem, ale blok s linkou nahoře; `<Money>` vždy `tabular-nums` a zarovnané vpravo.
+
+- [ ] **Step 5: Projdi vizuální kontrolu**
 
 ```bash
 npm run dev
 ```
 
-Otevři v prohlížeči na šířce 390 px a zkontroluj, že se nic nepřetéká vodorovně a navigace je palcem dosažitelná.
+Na šířce 390 px zkontroluj a projdi seznam:
+
+- nic se nepřetéká vodorovně, navigace je palcem dosažitelná,
+- na obrazovce je **nejvýš jedna růžová věc** plus primární tlačítko,
+- čísla ve sloupci jsou zarovnaná vpravo a číslice mají stejnou šířku,
+- česká diakritika se vykresluje v Archivu, ne náhradním fontem (zkontroluj `ě š č ř ž ů` v nadpisu),
+- `border-radius` má jen hero blok a QR karta, nikde jinde,
+- fokus klávesnicí je viditelný na každém tlačítku i odkazu,
+- ani jeden ze zakázaných vzorů z Global Constraints se nikam nevloudil.
 
 - [ ] **Step 6: Commit**
 
@@ -1795,7 +1939,7 @@ export async function saveAppearances(matchId: number, playerIds: unknown) {
 
 - [ ] **Step 3: Postav stránky**
 
-`admin/zapasy/page.tsx`: formulář na založení (datum, soupeř, výhra/prohra jako dvojice přepínačů, skóre volitelně), pod ním seznam zápasů s výsledkem barevně (`--ok` výhra, `--danger` prohra) a odkazem na sestavu.
+`admin/zapasy/page.tsx`: formulář na založení (datum, soupeř, výhra/prohra jako dvojice přepínačů, skóre volitelně), pod ním seznam zápasů s odkazem na sestavu. Výhra je plná značka v `--chalk`, prohra obrysová v `--chalk-dim` — žádná zelená ani červená.
 
 `admin/zapasy/[id]/page.tsx`: editace zápasu + výběr, kdo nastoupil. Použij stejný vzor jako `AttendanceGrid`, ale bez stepperu hostů — stačí přepínání jmen a tlačítko Uložit volající `saveAppearances`. Vytvoř na to samostatnou komponentu `src/components/LineupPicker.tsx`, nesnaž se ohýbat `AttendanceGrid`.
 
@@ -1950,7 +2094,7 @@ Poznámka: `reopenSettlement` zahodí i příznaky `paid`. Zobraz u toho tlačí
 
 `admin/vyuctovani/[id]/page.tsx`:
 - **koncept** — náhled spočítaný za běhu z `loadTrainingInputs` + `calculateSettlement`: tabulka hráč/částka, pod ní součet ceny hal, součet účtovaného a rozdíl. Varování u `skippedTrainingIds` („Trénink 12. 10. proběhl, ale nemá zadanou docházku — nezapočítal se."). Tlačítko „Uzavřít období".
-- **uzavřené** — tabulka ze `settlementItems`, u každého řádku přepínač zaplaceno s barvou `--ok`/`--warn`, souhrn kolik z kolika zaplaceno, tlačítko „Zrušit uzavření".
+- **uzavřené** — tabulka ze `settlementItems`, u každého řádku přepínač zaplaceno: nezaplacená částka je `--pink`, zaplacená `--chalk-dim` s odškrtnutím. Souhrn kolik z kolika zaplaceno, tlačítko „Zrušit uzavření".
 
 - [ ] **Step 4: Ověř ručně proti ruční kalkulaci**
 
@@ -2118,13 +2262,13 @@ QR kód **musí** mít světlé pozadí i v tmavém tématu — tohle je nejčas
 
 - [ ] **Step 3: Postav `/platby`**
 
-Najdi nejnovější uzavřené vyúčtování. Pro každou položku zobraz jméno hráče, částku a stav (`--ok` zaplaceno / `--warn` nezaplaceno), jméno odkazuje na `/platby/[playerId]`. Nahoře souhrn „Zaplaceno X z Y" a název období. Když uzavřené vyúčtování neexistuje, zobraz „Zatím není co platit."
+Najdi nejnovější uzavřené vyúčtování. Pro každou položku zobraz jméno hráče, částku a stav — nezaplaceno `--pink`, zaplaceno `--chalk-dim` s odškrtnutím. Jméno odkazuje na `/platby/[playerId]`. Nahoře souhrn „Zaplaceno X z Y" a název období. Když uzavřené vyúčtování neexistuje, zobraz „Zatím není co platit."
 
 - [ ] **Step 4: Postav `/platby/[playerId]`**
 
-Detail hráče v aktuálním uzavřeném období: jméno, částka velkým písmem v `--accent`, `<PaymentQr />`. Variabilní symbol se skládá jako `periodEnd` ve tvaru `YYYYMM` + `playerId` doplněné na dvě místa zleva nulou (např. `2026` + `10` + `07` = `20261007`). Zpráva pro příjemce je `Volejbal ${settlement.label}`.
+Detail hráče v aktuálním uzavřeném období: jméno, částka jako hero číslo (`--t-hero`, třída `.display`, barva `--pink`), pod ní `<PaymentQr />`. Variabilní symbol se skládá jako `periodEnd` ve tvaru `YYYYMM` + `playerId` doplněné na dvě místa zleva nulou (např. `2026` + `10` + `07` = `20261007`). Zpráva pro příjemce je `Volejbal ${settlement.label}`.
 
-Když je už zaplaceno, místo QR zobraz potvrzení v `--ok` a datum platby.
+Když je už zaplaceno, místo QR zobraz odškrtnutí, slovo „Zaplaceno“ a datum platby, celé v `--chalk-dim`. Stránka pak nemá růžovou vůbec — a přesně to je ta zpráva.
 
 - [ ] **Step 5: Ověř skenováním**
 
