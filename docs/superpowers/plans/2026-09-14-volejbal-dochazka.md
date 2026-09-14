@@ -1305,22 +1305,32 @@ git commit -m "feat(ui): černo-růžové téma, layout a formátovací pomocní
 - Produces:
   - z `@/db/queries`: `getActivePlayers()`, `getAllPlayers()` — vrací `{ id, name, contact, archivedAt }[]`, řazeno podle jména česky
   - Server Actions: `createPlayer(formData)`, `updatePlayer(formData)`, `archivePlayer(formData)`, `restorePlayer(formData)`
+  - `src/db/seed.ts` + skript `npm run db:seed` — naplní kádr z WhatsApp skupiny, idempotentně
 
 - [ ] **Step 1: Napiš dotazy**
 
 `src/db/queries.ts`:
 
 ```ts
-import { asc, isNull } from 'drizzle-orm'
+import { isNull } from 'drizzle-orm'
 import { db } from '@/db'
 import { players } from '@/db/schema'
 
+/**
+ * Řadíme v JS, ne v SQL. Postgres by podle své collation mohl poslat Šárku
+ * až za Z; `localeCompare` s 'cs' dá správné české pořadí bez ohledu na to,
+ * jak je databáze nastavená. Hráčů jsou desítky, cena je nulová.
+ */
+function byCzechName<T extends { name: string }>(rows: T[]): T[] {
+  return [...rows].sort((a, b) => a.name.localeCompare(b.name, 'cs'))
+}
+
 export async function getActivePlayers() {
-  return db.select().from(players).where(isNull(players.archivedAt)).orderBy(asc(players.name))
+  return byCzechName(await db.select().from(players).where(isNull(players.archivedAt)))
 }
 
 export async function getAllPlayers() {
-  return db.select().from(players).orderBy(asc(players.name))
+  return byCzechName(await db.select().from(players))
 }
 ```
 
@@ -1382,15 +1392,101 @@ export async function restorePlayer(formData: FormData) {
 
 Formuláře používají `action={createPlayer}` přímo, žádný klientský stav.
 
-- [ ] **Step 4: Ověř ručně**
+- [ ] **Step 4: Napiš seed skript s kádrem**
 
-Přidej tři hráče, jednoho archivuj, vrať ho. Zkontroluj, že seznam je řazený česky (Č za C, Š za S).
+`src/db/seed.ts` — jednorázové naplnění hráčů z WhatsApp skupiny. Skript je **idempotentní**: hráče se stejným jménem nepřidá dvakrát, takže se dá pustit opakovaně.
 
-- [ ] **Step 5: Commit**
+```ts
+import 'dotenv/config'
+import { db } from './index'
+import { players } from './schema'
+
+/**
+ * Kádr podle WhatsApp skupiny (stav k 14. 9. 2026).
+ * Není to soupiska — kdo nechodí na tréninky, archivuje se v /admin/hraci.
+ */
+const ROSTER = [
+  'Anetka Bouberlová',
+  'Daniel Petrtýl',
+  'Eda Mlej',
+  'Filip Kožený',
+  'Jakub Kuchar',
+  'Jan Hrabák',
+  'Johana Kolářová',
+  'Klára Kalinová',
+  'Kohi',
+  'Lenka',
+  'Lucie Boušová',
+  'Matej Kolak',
+  'Naty Houzvickova',
+  'Nicole Přibylová',
+  'Nynča',
+  'Petr Šindílek',
+  'Šárka Beková',
+  'Tomáš Blodek',
+  'Tomáš Loužecký',
+  'Václav Pesl',
+  'Viola',
+  'Vojtěch Šašek',
+  'ORGANIZÁTOR — přejmenuj mě',
+]
+
+async function seed() {
+  const existing = await db.select({ name: players.name }).from(players)
+  const known = new Set(existing.map((p) => p.name))
+  const missing = ROSTER.filter((name) => !known.has(name))
+
+  if (missing.length === 0) {
+    console.log('Všichni hráči už v databázi jsou, nepřidávám nic.')
+    return
+  }
+
+  await db.insert(players).values(missing.map((name) => ({ name })))
+  console.log(`Přidáno ${missing.length} hráčů:`)
+  for (const name of missing) console.log(`  ${name}`)
+}
+
+seed().catch((error) => {
+  console.error(error)
+  process.exit(1)
+})
+```
+
+Do `package.json` přidej:
+
+```json
+"db:seed": "npx tsx --env-file=.env.local src/db/seed.ts"
+```
+
+a doinstaluj `tsx`:
+
+```bash
+npm install -D tsx
+```
+
+- [ ] **Step 5: Spusť seed a doplň chybějící**
+
+```bash
+npm run db:seed
+```
+
+Expected: přidá se 23 hráčů.
+
+Potom v `/admin/hraci` ručně:
+- **přejmenuj `ORGANIZÁTOR — přejmenuj mě`** na své jméno (ve WhatsApp výpisu figuruješ jen jako „Vy", jméno z něj nešlo přečíst),
+- **zkontroluj diakritiku** u `Matej Kolak` a `Naty Houzvickova` — ve WhatsAppu jsou bez háčků, ale skutečná jména budou nejspíš `Matěj Kolák` a `Naty Houzvicková`,
+- **doplň, kdo chybí.** Zdrojové screenshoty nezachytily celou abecedu: mezi `Petr Šindílek` a `Šárka Beková` chybí případní hráči na R a S, a nad `Anetka Bouberlová` mohl být ještě někdo na A.
+- **archivuj ty, kdo na tréninky nechodí.** WhatsApp skupina není soupiska.
+
+- [ ] **Step 6: Ověř ručně**
+
+Přidej testovacího hráče, archivuj ho, vrať ho, smaž. Zkontroluj, že je seznam řazený česky — `Šárka` musí být až za `Petr`, ne mezi `S` a `T` podle ASCII.
+
+- [ ] **Step 7: Commit**
 
 ```bash
 git add -A
-git commit -m "feat(admin): správa hráčů včetně archivace"
+git commit -m "feat(admin): správa hráčů, archivace a seed kádru"
 ```
 
 ---
@@ -2095,5 +2191,5 @@ git commit -m "chore: nasazení na Vercel, analytika a README"
 ## Co plán záměrně neřeší
 
 - **Scraper avlka.cz** — §10 specifikace. Sezóna 2026/2027 zatím nemá odehrané zápasy, není co stahovat.
-- **Seed hráčů** — naklikají se v Tasku 9. Pokud budou jména k dispozici předem, přidej `src/db/seed.ts` a spusť ho jednou.
+- **Doplnění kádru.** Seed v Tasku 9 obsahuje 22 jmen přečtených ze screenshotů WhatsApp skupiny plus placeholder za organizátora. Chybí případní hráči na R a S (screenshoty ten úsek abecedy nezachytily) a jméno organizátora. Doplní se ručně v `/admin/hraci`.
 - **Přihlašování hráčů, notifikace, přihlašování na trénink dopředu** — mimo rozsah specifikace.

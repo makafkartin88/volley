@@ -258,5 +258,5 @@ Doménová vrstva nezná Next.js ani databázi — dostává prostá data, vrac�
 
 ## 12. Otevřené body k doplnění před implementací
 
-- Seznam hráčů pro seed (jinak se naklikají v adminu).
+- ~~Seznam hráčů pro seed~~ — vyřešeno, 22 jmen z WhatsApp skupiny je v seed skriptu (Task 9 plánu). Chybí jméno organizátora a případní hráči na R/S, doplní se v adminu.
 - Číslo účtu pro QR platby (lze doplnit až při nasazení, je to env proměnná).
