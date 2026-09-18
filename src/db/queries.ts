@@ -1,5 +1,5 @@
 import {
-  and, desc, eq, gte, isNull, lte,
+  and, desc, eq, gte, isNotNull, isNull, lte,
 } from 'drizzle-orm'
 import { db } from '@/db'
 import {
@@ -26,6 +26,22 @@ export async function getAllPlayers() {
 
 export async function getTrainings() {
   return db.select().from(trainings).orderBy(desc(trainings.date))
+}
+
+/**
+ * Tréninky s docházkou a počtem hlav pro veřejný přehled (`/` a `/treninky`).
+ * Stejná dvoudotazová logika jako `getHeadCounts` — objemy jsou malé.
+ */
+export async function getTrainingsWithAttendance() {
+  const rows = await db.select().from(trainings).orderBy(desc(trainings.date))
+  const all = await db.select().from(attendance)
+  return rows.map((training) => ({
+    ...training,
+    attendance: all.filter((a) => a.trainingId === training.id),
+    heads: all
+      .filter((a) => a.trainingId === training.id)
+      .reduce((sum, a) => sum + 1 + a.guests, 0),
+  }))
 }
 
 export async function getTrainingWithAttendance(id: number) {
@@ -104,5 +120,22 @@ export async function getSettlementDetail(id: number) {
   if (!settlement) return null
   const items = await db.select().from(settlementItems)
     .where(eq(settlementItems.settlementId, id))
+  return { settlement, items }
+}
+
+/**
+ * Nejnověji uzavřené vyúčtování s položkami, pro kartu „Nezaplaceno“ na `/`.
+ * Otevřené (koncept) vyúčtování se pro tuhle kartu nepočítá — dokud není
+ * uzavřené, dluhy ještě nejsou finální.
+ */
+export async function getLatestClosedSettlement() {
+  const rows = await db.select().from(settlements)
+    .where(isNotNull(settlements.closedAt))
+    .orderBy(desc(settlements.closedAt))
+    .limit(1)
+  const [settlement] = rows
+  if (!settlement) return null
+  const items = await db.select().from(settlementItems)
+    .where(eq(settlementItems.settlementId, settlement.id))
   return { settlement, items }
 }
