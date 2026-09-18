@@ -1,8 +1,11 @@
-import { desc, eq, isNull } from 'drizzle-orm'
+import {
+  and, desc, eq, gte, isNull, lte,
+} from 'drizzle-orm'
 import { db } from '@/db'
 import {
-  players, trainings, attendance, matches, matchAppearances,
+  players, trainings, attendance, matches, matchAppearances, settlements, settlementItems,
 } from '@/db/schema'
+import type { TrainingInput } from '@/domain/settlement'
 
 /**
  * Řadíme v JS, ne v SQL. Postgres by podle své collation mohl poslat Šárku
@@ -68,4 +71,38 @@ export async function getHeadCounts(): Promise<Map<number, number>> {
     counts.set(row.trainingId, (counts.get(row.trainingId) ?? 0) + 1 + row.guests)
   }
   return counts
+}
+
+/**
+ * Tréninky v období ve tvaru, který čeká `calculateSettlement` z domény.
+ * Docházku načítáme celou a filtrujeme v JS ze stejného důvodu jako
+ * `getHeadCounts` — objemy jsou malé a ušetří se druhý dotaz s IN().
+ */
+export async function loadTrainingInputs(
+  periodStart: string,
+  periodEnd: string,
+): Promise<TrainingInput[]> {
+  const rows = await db.select().from(trainings)
+    .where(and(gte(trainings.date, periodStart), lte(trainings.date, periodEnd)))
+  const all = await db.select().from(attendance)
+  return rows.map((training) => ({
+    id: training.id,
+    priceCzk: training.priceCzk,
+    status: training.status,
+    attendance: all
+      .filter((a) => a.trainingId === training.id)
+      .map((a) => ({ playerId: a.playerId, guests: a.guests })),
+  }))
+}
+
+export async function getSettlements() {
+  return db.select().from(settlements).orderBy(desc(settlements.periodEnd))
+}
+
+export async function getSettlementDetail(id: number) {
+  const [settlement] = await db.select().from(settlements).where(eq(settlements.id, id))
+  if (!settlement) return null
+  const items = await db.select().from(settlementItems)
+    .where(eq(settlementItems.settlementId, id))
+  return { settlement, items }
 }
