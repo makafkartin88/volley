@@ -26,3 +26,11 @@ export function formatWinRate(rate: number | null): string {
   if (rate === null) return '—'
   return `${Math.round(rate * 100)} %`
 }
+
+/** ISO datum (YYYY-MM-DD) nejbližší neděle. Když je dnes neděle, vrátí dnešek. */
+export function nextSundayIso(from: Date = new Date()): string {
+  const date = new Date(from)
+  date.setHours(12, 0, 0, 0) // poledne, aby letní čas neposunul den
+  date.setDate(date.getDate() + ((7 - date.getDay()) % 7))
+  return date.toISOString().slice(0, 10)
+}
