@@ -1,26 +1,163 @@
 @import "tailwindcss";
 
+/* ---------------------------------------------------------------------------
+   Paleta a typová škála — jediný zdroj pravdy pro celou aplikaci.
+   Tmavá není neutrální šeď, ale tmavý lilek: má stejný odstín jako růžová,
+   takže paleta drží pohromadě. Bílá je teple lomená, jako vápno na čarách.
+   Zelená ani oranžová v paletě záměrně nejsou.
+--------------------------------------------------------------------------- */
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --ink: #120a16;
+  --ink-raised: #1c1020;
+  --rule: #32213a;
+  --chalk: #f6f1f4;
+  --chalk-dim: #9b8da3;
+  --pink: #ff2e7e;
+  --pink-deep: #b8145a;
+  --danger: #ff5c5c;
+
+  --t-hero: clamp(3.5rem, 14vw, 6rem);
+  --t-title: 1.5rem;
+  --t-body: 1rem;
+  --t-meta: 0.8125rem;
+
+  color-scheme: dark;
 }
 
+/* Zpřístupnění Tailwindu (v4): bg-ink, text-pink, border-rule, text-hero, … */
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --color-ink: var(--ink);
+  --color-ink-raised: var(--ink-raised);
+  --color-rule: var(--rule);
+  --color-chalk: var(--chalk);
+  --color-chalk-dim: var(--chalk-dim);
+  --color-pink: var(--pink);
+  --color-pink-deep: var(--pink-deep);
+  --color-danger: var(--danger);
+
+  --font-sans: var(--font-archivo), system-ui, sans-serif;
+
+  --text-hero: var(--t-hero);
+  --text-title: var(--t-title);
+  --text-body: var(--t-body);
+  --text-meta: var(--t-meta);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+/* Poloměr nese informaci „tohle je samostatný objekt“. Má ho jen hero blok
+   a QR karta — nic jiného v aplikaci. Proto jediný jmenovaný poloměr. */
+@theme {
+  --radius-object: 20px;
+}
+
+@layer base {
+  body {
+    background: var(--ink);
+    color: var(--chalk);
+    font-family: var(--font-archivo), system-ui, sans-serif;
+    font-variant-numeric: tabular-nums;
+    font-size: var(--t-body);
+    line-height: 1.5;
+  }
+
+  /* Fokus klávesnicí musí být vidět na všem, na co se dá sáhnout.
+     Záměrně v --chalk, ne v růžové: růžová je rezervovaná pro to jediné
+     číslo na obrazovku a pro primární akci. */
+  :focus-visible {
+    outline: 2px solid var(--chalk);
+    outline-offset: 2px;
+  }
+
+  ::selection {
+    background: var(--pink);
+    color: var(--ink);
   }
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+/* Hlas aplikace: roztažené a těžké Archivo — dres, výsledková tabule.
+   Běžný text zůstává na wdth 100 / wght 400 a ustupuje. */
+.display {
+  font-stretch: 112%;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+
+/* Délka řádku max 66 znaků. */
+@utility measure {
+  max-width: 66ch;
+}
+
+/* Linkovaný zápis, ne karty: jméno vlevo, hodnota vpravo, mezi řádky linka.
+   Žádný stín, žádný border-radius. */
+@utility row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 1rem;
+  padding-block: 0.75rem;
+  border-bottom: 1px solid var(--rule);
+}
+
+/* Tlačítka nemají poloměr — ten patří jen hero bloku a QR kartě.
+   Primární akce je růžová a na obrazovce smí být jen jedna. */
+@utility btn-primary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 3rem;
+  padding-inline: 1.25rem;
+  background: var(--pink);
+  color: var(--ink);
+  font-stretch: 112%;
+  font-weight: 700;
+
+  &:active {
+    background: var(--pink-deep);
+  }
+
+  &:disabled {
+    background: var(--rule);
+    color: var(--chalk-dim);
+  }
+}
+
+@utility btn-quiet {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 3rem;
+  padding-inline: 1rem;
+  border: 1px solid var(--rule);
+  color: var(--chalk);
+
+  &:active {
+    background: var(--ink-raised);
+  }
+}
+
+/* Jediný animovaný moment v aplikaci (přepočet hlav a ceny při ukládání
+   docházky). Nic jiného se nehýbe.
+   Použití: dej měnícímu se prvku `className="tick"` a `key={hodnota}` —
+   React ho při změně hodnoty přemountuje a tím animaci znovu spustí.
+   Přechod (`transition`) by tu nefungoval: mění se textový obsah, ne
+   vlastnost, kterou by šlo interpolovat. */
+@utility tick {
+  animation: tick-flash 150ms ease-out;
+}
+
+@keyframes tick-flash {
+  from {
+    opacity: 0.4;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
 }
