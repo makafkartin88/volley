@@ -1,6 +1,8 @@
 import { desc, eq, isNull } from 'drizzle-orm'
 import { db } from '@/db'
-import { players, trainings, attendance } from '@/db/schema'
+import {
+  players, trainings, attendance, matches, matchAppearances,
+} from '@/db/schema'
 
 /**
  * Řadíme v JS, ne v SQL. Postgres by podle své collation mohl poslat Šárku
@@ -28,6 +30,27 @@ export async function getTrainingWithAttendance(id: number) {
   if (!training) return null
   const rows = await db.select().from(attendance).where(eq(attendance.trainingId, id))
   return { training, attendance: rows }
+}
+
+/**
+ * Zápasy s ID hráčů, kteří nastoupili. Dva dotazy místo joinu jsou tu
+ * záměr: zápasů jsou desítky, ne tisíce, a tenhle tvar jde rovnou předat
+ * `teamWinRate`/`playerWinRate` z `@/domain/stats`.
+ */
+export async function getMatchesWithAppearances() {
+  const rows = await db.select().from(matches).orderBy(desc(matches.date))
+  const appearances = await db.select().from(matchAppearances)
+  return rows.map((match) => ({
+    ...match,
+    playerIds: appearances.filter((a) => a.matchId === match.id).map((a) => a.playerId),
+  }))
+}
+
+export async function getMatchWithAppearances(id: number) {
+  const [match] = await db.select().from(matches).where(eq(matches.id, id))
+  if (!match) return null
+  const rows = await db.select().from(matchAppearances).where(eq(matchAppearances.matchId, id))
+  return { match, playerIds: rows.map((r) => r.playerId) }
 }
 
 /**
