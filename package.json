@@ -11,7 +11,9 @@
     "test:watch": "vitest",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
-    "db:seed": "npx tsx --env-file=.env.local src/db/seed.ts"
+    "db:seed": "npx tsx --env-file=.env.local src/db/seed.ts",
+    "db:demo": "npx tsx --env-file=.env.local src/db/demo.ts",
+    "db:demo:clear": "npx tsx --env-file=.env.local src/db/demo-clear.ts"
   },
   "dependencies": {
     "@neondatabase/serverless": "^1.1.0",
