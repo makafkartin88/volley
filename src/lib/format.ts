@@ -28,6 +28,16 @@ export function formatWinRate(rate: number | null): string {
 }
 
 /**
+ * České skloňování po číslovce: 1 hlava, 2–4 hlavy, 0 a 5+ hlav.
+ * Vrací jen slovo, číslo si volající vypíše sám.
+ */
+export function plural(count: number, one: string, few: string, many: string): string {
+  if (count === 1) return one
+  if (count >= 2 && count <= 4) return few
+  return many
+}
+
+/**
  * ISO datum (YYYY-MM-DD) dneška v místním čase.
  *
  * Záměrně ne `new Date().toISOString()` — ten vrací UTC, takže mezi půlnocí

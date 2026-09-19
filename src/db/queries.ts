@@ -80,6 +80,25 @@ export async function getSettlements() {
   return db.select().from(settlements).orderBy(desc(settlements.periodEnd))
 }
 
+/** Jeden hráč podle id, nebo `null` když takový není. Pro `/hraci/[id]`. */
+export async function getPlayerById(id: number) {
+  const [player] = await db.select().from(players).where(eq(players.id, id))
+  return player ?? null
+}
+
+/**
+ * Všechna vyúčtování i s položkami, od nejnovějšího období. Dva dotazy a
+ * spojení v JS jako jinde — vyúčtování jsou jednotky, hráčů desítky.
+ */
+export async function getSettlementsWithItems() {
+  const rows = await db.select().from(settlements).orderBy(desc(settlements.periodEnd))
+  const items = await db.select().from(settlementItems)
+  return rows.map((settlement) => ({
+    settlement,
+    items: items.filter((item) => item.settlementId === settlement.id),
+  }))
+}
+
 export async function getSettlementDetail(id: number) {
   const [settlement] = await db.select().from(settlements).where(eq(settlements.id, id))
   if (!settlement) return null
