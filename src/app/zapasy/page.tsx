@@ -23,11 +23,13 @@ export default async function ZapasyPage() {
     <div className="flex flex-col gap-8">
       <PageHeader title="Zápasy" subtitle="Výsledky a úspěšnost týmu i jednotlivců." />
 
-      <StatCard
-        label="Týmová úspěšnost"
-        value={formatWinRate(record.rate)}
-        hint={record.played > 0 ? `${record.wins}–${record.losses} · ${record.played} zápasů` : undefined}
-      />
+      <StatCard label="Týmová úspěšnost" value={formatWinRate(record.rate)} />
+
+      <div className="grid grid-cols-3 gap-3">
+        <StatCard label="Výhry" value={record.wins} />
+        <StatCard label="Prohry" value={record.losses} />
+        <StatCard label="Odehráno" value={record.played} />
+      </div>
 
       <section>
         <h2 className="display border-b border-rule pb-3 text-title">Zápasy</h2>

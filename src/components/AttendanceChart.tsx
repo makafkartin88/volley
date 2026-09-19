@@ -15,7 +15,9 @@ const PLOT_H = 150
 /** Dotykový cíl mezi body. Když se body nevejdou, graf se vodorovně posouvá. */
 const MIN_GAP = 30
 
-const ROMAN = ['', 'I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X', 'XI', 'XII']
+const MONTHS = [
+  '', 'led', 'úno', 'bře', 'dub', 'kvě', 'čvn', 'čvc', 'srp', 'zář', 'říj', 'lis', 'pro',
+]
 
 /**
  * Docházka trénink po tréninku. Jedna řada, takže žádná legenda — popisuje
@@ -164,7 +166,7 @@ export function AttendanceChart({ points }: { points: ChartPoint[] }) {
               fontSize={11}
               fill="var(--chalk-dim)"
             >
-              {ROMAN[tick.month]}
+              {MONTHS[tick.month]}
             </text>
           ))}
 

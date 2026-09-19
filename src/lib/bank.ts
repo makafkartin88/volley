@@ -10,7 +10,9 @@ export function getPayeeIban(): string {
   if (!number || !bankCode) {
     throw new Error('Chybí BANK_ACCOUNT_NUMBER nebo BANK_CODE')
   }
-  return toCzechIban({ prefix: process.env.BANK_ACCOUNT_PREFIX, number, bankCode })
+  // `|| undefined`, ne jen `process.env...` — proměnná z .env je vždy
+  // řetězec, i "prázdná", a `toCzechIban` čeká undefined, aby doplnila '0'.
+  return toCzechIban({ prefix: process.env.BANK_ACCOUNT_PREFIX || undefined, number, bankCode })
 }
 
 export function getPayeeName(): string | undefined {

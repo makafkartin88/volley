@@ -23,6 +23,8 @@ export default async function PlatbyPage() {
 
   const { settlement, items } = closedSettlement
   const paidCount = items.filter((item) => item.paid).length
+  // Nezaplacení nahoru — to je ta věc, kterou organizátor potřebuje řešit.
+  const sortedItems = [...items].sort((a, b) => Number(a.paid) - Number(b.paid))
 
   return (
     <div className="flex flex-col gap-8">
@@ -35,7 +37,7 @@ export default async function PlatbyPage() {
         {items.length === 0 && (
           <p className="measure py-4 text-chalk-dim">Vyúčtování bylo uzavřeno bez žádných položek.</p>
         )}
-        {items.map((item) => (
+        {sortedItems.map((item) => (
           <Link key={item.id} href={`/platby/${item.playerId}`} className="row">
             <span className={`text-body ${item.paid ? 'text-chalk-dim line-through' : 'text-chalk'}`}>
               {nameById.get(item.playerId) ?? `Hráč #${item.playerId}`}

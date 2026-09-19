@@ -80,21 +80,19 @@ export default async function HracDetailPage({
               const came = entry !== undefined
               return (
                 <li key={training.id} className="row">
-                  <span className="flex items-center gap-3">
-                    <span
-                      aria-hidden="true"
-                      className={`flex h-4 w-4 shrink-0 items-center justify-center border ${
-                        came ? 'border-chalk bg-chalk' : 'border-chalk-dim'
-                      }`}
-                    />
-                    <span className={`text-body ${came ? 'text-chalk' : 'text-chalk-dim opacity-70'}`}>
-                      {formatDate(training.date)}
-                    </span>
+                  <span className={`text-body ${came ? 'text-chalk' : 'text-chalk-dim opacity-70'}`}>
+                    {formatDate(training.date)}
                   </span>
-                  <span className={`text-meta ${came ? 'text-chalk-dim' : 'text-chalk-dim opacity-70'}`}>
-                    {came
-                      ? (entry.guests > 0 ? `Byl, +${entry.guests} host${guestSuffix(entry.guests)}` : 'Byl')
-                      : 'Nebyl'}
+                  <span className="flex items-center gap-2 text-meta text-chalk-dim">
+                    {came && entry.guests > 0 && (
+                      <span aria-hidden="true">+{entry.guests}</span>
+                    )}
+                    <span aria-hidden="true">{came ? '✅' : '❌'}</span>
+                    <span className="sr-only">
+                      {came
+                        ? `Byl${entry.guests > 0 ? `, +${entry.guests} host${guestSuffix(entry.guests)}` : ''}`
+                        : 'Nebyl'}
+                    </span>
                   </span>
                 </li>
               )

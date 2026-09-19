@@ -60,7 +60,7 @@ export default async function Home() {
               <div>
                 <dt className="text-meta text-chalk-dim">Přihlášeno</dt>
                 <dd className="display text-title tabular-nums text-chalk">
-                  {upcoming.heads} {plural(upcoming.heads, 'hlava', 'hlavy', 'hlav')}
+                  {upcoming.heads} {plural(upcoming.heads, 'hráč', 'hráči', 'hráčů')}
                 </dd>
               </div>
               <div>

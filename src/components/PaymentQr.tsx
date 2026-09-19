@@ -30,6 +30,9 @@ export async function PaymentQr({
     type: 'svg',
     errorCorrectionLevel: 'M',
     margin: 1,
+    // Bez `width` knihovna vygeneruje SVG jen s `viewBox`, žádnou šířkou
+    // ani výškou — v `w-fit` obalu se to zhroutí na 0×0 px a QR je neviditelný.
+    width: 240,
     color: { dark: '#0A0A0B', light: '#FFFFFF' },
   })
 
