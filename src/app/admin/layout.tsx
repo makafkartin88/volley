@@ -1,10 +1,9 @@
 import { logoutAction } from '@/actions/auth'
-import { AdminNav } from '@/components/AdminNav'
 import { isAdmin } from '@/lib/auth'
 
 export default async function AdminLayout({ children }: LayoutProps<'/admin'>) {
-  // Přihlašovací obrazovka žádnou admin lištu nemá — není kam navigovat
-  // a není co odhlašovat.
+  // Administrace je jedna stránka, takže navigace tu žádná není — zbyl
+  // jen štítek a odhlášení. Přihlašovací obrazovka nemá ani to.
   if (!(await isAdmin())) {
     return (
       <main className="mx-auto w-full max-w-2xl flex-1 px-4 pt-6 pb-12">
@@ -25,8 +24,7 @@ export default async function AdminLayout({ children }: LayoutProps<'/admin'>) {
           </form>
         </div>
       </div>
-      <AdminNav />
-      <main className="mx-auto w-full max-w-2xl flex-1 px-4 pt-6 pb-28 sm:pt-8 sm:pb-12">
+      <main className="mx-auto w-full max-w-2xl flex-1 px-4 pt-6 pb-12 sm:pt-8">
         {children}
       </main>
     </>

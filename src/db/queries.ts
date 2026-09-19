@@ -24,10 +24,6 @@ export async function getAllPlayers() {
   return byCzechName(await db.select().from(players))
 }
 
-export async function getTrainings() {
-  return db.select().from(trainings).orderBy(desc(trainings.date))
-}
-
 /**
  * Tréninky s docházkou a počtem hlav pro veřejný přehled (`/` a `/treninky`).
  * Stejná dvoudotazová logika jako `getHeadCounts` — objemy jsou malé.
@@ -44,13 +40,6 @@ export async function getTrainingsWithAttendance() {
   }))
 }
 
-export async function getTrainingWithAttendance(id: number) {
-  const [training] = await db.select().from(trainings).where(eq(trainings.id, id))
-  if (!training) return null
-  const rows = await db.select().from(attendance).where(eq(attendance.trainingId, id))
-  return { training, attendance: rows }
-}
-
 /**
  * Zápasy s ID hráčů, kteří nastoupili. Dva dotazy místo joinu jsou tu
  * záměr: zápasů jsou desítky, ne tisíce, a tenhle tvar jde rovnou předat
@@ -63,30 +52,6 @@ export async function getMatchesWithAppearances() {
     ...match,
     playerIds: appearances.filter((a) => a.matchId === match.id).map((a) => a.playerId),
   }))
-}
-
-export async function getMatchWithAppearances(id: number) {
-  const [match] = await db.select().from(matches).where(eq(matches.id, id))
-  if (!match) return null
-  const rows = await db.select().from(matchAppearances).where(eq(matchAppearances.matchId, id))
-  return { match, playerIds: rows.map((r) => r.playerId) }
-}
-
-/**
- * Počet hlav (hráč + jeho hosté) na trénink, pro seznam v `/admin/treninky`.
- * Tréninků i řádků docházky jsou desítky — sčítáme v JS místo GROUP BY.
- */
-export async function getHeadCounts(): Promise<Map<number, number>> {
-  const rows = await db.select({
-    trainingId: attendance.trainingId,
-    guests: attendance.guests,
-  }).from(attendance)
-
-  const counts = new Map<number, number>()
-  for (const row of rows) {
-    counts.set(row.trainingId, (counts.get(row.trainingId) ?? 0) + 1 + row.guests)
-  }
-  return counts
 }
 
 /**

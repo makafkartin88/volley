@@ -1,87 +1,82 @@
-import Link from 'next/link'
+import { AttendanceGrid } from '@/components/AttendanceGrid'
 import { PageHeader } from '@/components/PageHeader'
+import { MatchesSection } from '@/components/admin/MatchesSection'
+import { PlayersSection } from '@/components/admin/PlayersSection'
+import { SettlementsSection } from '@/components/admin/SettlementsSection'
+import { CreateTrainingForm, TrainingsSection } from '@/components/admin/TrainingsSection'
+import { TrainingStatusToggle, trainingStatusLabel } from '@/components/admin/TrainingStatus'
 import {
-  getHeadCounts, getLatestClosedSettlement, getSettlements, getTrainings,
+  getActivePlayers, getAllPlayers, getMatchesWithAppearances, getSettlements,
+  getTrainingsWithAttendance,
 } from '@/db/queries'
-import { formatDate } from '@/lib/format'
+import { formatCzk, formatDate } from '@/lib/format'
 
-const tiles = [
-  { href: '/admin/hraci', label: 'Hráči' },
-  { href: '/admin/treninky', label: 'Tréninky' },
-  { href: '/admin/zapasy', label: 'Zápasy' },
-  { href: '/admin/vyuctovani', label: 'Vyúčtování' },
-]
-
-// Nepokrytý trénink dneška se má hlásit hned po tréninku, ne až zítra.
+// Nepokrytý trénink dneška se má hlásit hned po tréninku, ne až zítra,
+// a předvyplněné datum se počítá z aktuálního času, ne z času buildu.
 export const dynamic = 'force-dynamic'
 
+/**
+ * Celá administrace na jedné stránce. Organizátor ji otevírá na telefonu
+ * v hale hned po tréninku — to, co potřebuje, je nahoře a už rozbalené,
+ * zbytek čeká složený v `<details>`.
+ */
 export default async function AdminPage() {
-  const [trainings, headCounts, settlementsList, lastClosedDetail] = await Promise.all([
-    getTrainings(),
-    getHeadCounts(),
+  const [trainings, matches, settlements, activePlayers, allPlayers] = await Promise.all([
+    getTrainingsWithAttendance(),
+    getMatchesWithAppearances(),
     getSettlements(),
-    getLatestClosedSettlement(),
+    getActivePlayers(),
+    getAllPlayers(),
   ])
 
   const today = new Date().toISOString().slice(0, 10)
-  const missingAttendance = trainings.filter(
-    (t) => t.status === 'held' && t.date <= today && (headCounts.get(t.id) ?? 0) === 0
+  const byDateAsc = [...trainings].sort((a, b) => a.date.localeCompare(b.date))
+
+  // 1. proběhlý trénink bez docházky (nejstarší), 2. nejbližší nadcházející.
+  const overdue = byDateAsc.find(
+    (t) => t.status === 'held' && t.date <= today && t.attendance.length === 0
   )
+  const upcoming = byDateAsc.find((t) => t.date >= today)
+  const focus = overdue ?? upcoming ?? null
 
-  const openSettlements = settlementsList.filter((s) => !s.closedAt)
-
-  const lastClosed = lastClosedDetail?.settlement ?? null
-  const unpaidCount = lastClosedDetail
-    ? lastClosedDetail.items.filter((item) => !item.paid).length
-    : 0
-
-  const hasAttention = missingAttendance.length > 0 || openSettlements.length > 0 || unpaidCount > 0
+  const nameById = new Map(allPlayers.map((p) => [p.id, p.name]))
 
   return (
-    <div className="flex flex-col gap-8">
-      <PageHeader title="Přehled" subtitle="Rozcestník pro organizátora." />
-
-      {hasAttention && (
-        <section className="flex flex-col gap-1">
-          <h2 className="text-meta text-chalk-dim">Vyžaduje pozornost</h2>
-          <div className="flex flex-col">
-            {missingAttendance.map((t) => (
-              <Link key={t.id} href={`/admin/treninky/${t.id}`} className="row">
-                <span className="text-body text-chalk">
-                  Trénink {formatDate(t.date)} nemá zadanou docházku
-                </span>
-                <span className="text-meta text-chalk-dim">Doplnit</span>
-              </Link>
-            ))}
-            {openSettlements.map((s) => (
-              <Link key={s.id} href={`/admin/vyuctovani/${s.id}`} className="row">
-                <span className="text-body text-chalk">Vyúčtování „{s.label}“ je rozpracované</span>
-                <span className="text-meta text-chalk-dim">Dokončit</span>
-              </Link>
-            ))}
-            {lastClosed && unpaidCount > 0 && (
-              <Link href={`/admin/vyuctovani/${lastClosed.id}`} className="row">
-                <span className="text-body text-chalk">
-                  {unpaidCount} {unpaidCount === 1 ? 'hráč ještě nezaplatil' : 'hráčů ještě nezaplatilo'} za „{lastClosed.label}“
-                </span>
-                <span className="text-meta text-chalk-dim">Zobrazit</span>
-              </Link>
-            )}
-          </div>
+    <div className="flex flex-col gap-10">
+      {focus ? (
+        <section className="flex flex-col gap-6">
+          <PageHeader
+            title={formatDate(focus.date)}
+            subtitle={
+              overdue
+                ? `Chybí docházka, ${formatCzk(focus.priceCzk)} za halu`
+                : `${trainingStatusLabel[focus.status]}, ${formatCzk(focus.priceCzk)} za halu`
+            }
+          />
+          <AttendanceGrid
+            trainingId={focus.id}
+            priceCzk={focus.priceCzk}
+            players={activePlayers}
+            initial={focus.attendance.map((a) => ({ playerId: a.playerId, guests: a.guests }))}
+          />
+          <TrainingStatusToggle id={focus.id} status={focus.status} />
+        </section>
+      ) : (
+        <section className="flex flex-col gap-6">
+          <PageHeader
+            title="Žádný trénink"
+            subtitle="Založ nejbližší neděli a můžeš rovnou zapisovat docházku."
+          />
+          <CreateTrainingForm tone="primary" />
         </section>
       )}
 
-      <section className="grid grid-cols-2 gap-3">
-        {tiles.map((tile) => (
-          <Link
-            key={tile.href}
-            href={tile.href}
-            className="flex min-h-24 flex-col justify-end border border-chalk-dim px-3 py-3 text-body text-chalk"
-          >
-            {tile.label}
-          </Link>
-        ))}
-      </section>
+      <div className="flex flex-col border-t border-rule">
+        <TrainingsSection trainings={trainings} players={activePlayers} />
+        <MatchesSection matches={matches} players={activePlayers} today={today} />
+        <SettlementsSection settlements={settlements} nameById={nameById} />
+        <PlayersSection players={allPlayers} />
+      </div>
     </div>
   )
 }

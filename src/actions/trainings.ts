@@ -13,7 +13,7 @@ export async function createTraining(formData: FormData) {
   const priceCzk = z.coerce.number().int().positive().max(100000)
     .parse(formData.get('priceCzk') || 1350)
   await db.insert(trainings).values({ date, priceCzk })
-  revalidatePath('/admin/treninky')
+  revalidatePath('/admin')
 }
 
 export async function setTrainingStatus(formData: FormData) {
@@ -21,8 +21,7 @@ export async function setTrainingStatus(formData: FormData) {
   const id = z.coerce.number().int().positive().parse(formData.get('id'))
   const status = z.enum(['held', 'cancelled']).parse(formData.get('status'))
   await db.update(trainings).set({ status }).where(eq(trainings.id, id))
-  revalidatePath('/admin/treninky')
-  revalidatePath(`/admin/treninky/${id}`)
+  revalidatePath('/admin')
 }
 
 const entriesSchema = z.array(z.object({
@@ -42,7 +41,7 @@ export async function saveAttendance(trainingId: number, entries: unknown) {
       parsed.map((e) => ({ trainingId: id, playerId: e.playerId, guests: e.guests }))
     )
   }
-  revalidatePath(`/admin/treninky/${id}`)
+  revalidatePath('/admin')
   revalidatePath('/treninky')
   revalidatePath('/')
 }

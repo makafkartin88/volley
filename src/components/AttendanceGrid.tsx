@@ -1,7 +1,8 @@
 'use client'
 
-import { useState, useTransition } from 'react'
+import { useId, useState, useTransition } from 'react'
 import { saveAttendance } from '@/actions/trainings'
+import { PlayerSearch, playerMatchesQuery } from '@/components/PlayerSearch'
 import { formatCzk } from '@/lib/format'
 
 type Player = { id: number; name: string }
@@ -13,19 +14,27 @@ type Entry = { playerId: number; guests: number }
  * stepper hostů se objeví jen u přítomných, ať seznam nepřeplácá.
  *
  * Jediný růžový prvek na obrazovce je tlačítko Uložit docházku — přepínač
- * přítomnosti i stepper hostů zůstávají v --chalk/--chalk-dim.
+ * přítomnosti i stepper hostů zůstávají v --chalk/--chalk-dim. Když mřížka
+ * stojí uvnitř složené sekce, kde růžová nemá co dělat, přepne se
+ * `tone="quiet"`.
+ *
+ * Hledání je jen filtr zobrazení. Výběr žije v mapě `entries`, takže hráč
+ * odfiltrovaný z výhledu zůstává přítomný a dál se počítá do hlav.
  */
 export function AttendanceGrid({
-  trainingId, priceCzk, players, initial,
+  trainingId, priceCzk, players, initial, tone = 'primary',
 }: {
   trainingId: number
   priceCzk: number
   players: Player[]
   initial: Entry[]
+  tone?: 'primary' | 'quiet'
 }) {
   const [entries, setEntries] = useState<Map<number, number>>(
     () => new Map(initial.map((e) => [e.playerId, e.guests]))
   )
+  const [query, setQuery] = useState('')
+  const searchId = useId()
   const [pending, startTransition] = useTransition()
   const [saved, setSaved] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -58,18 +67,30 @@ export function AttendanceGrid({
     })
   }
 
+  // Hlavy se počítají z celého výběru, ne z právě viditelných řádků.
   const heads = [...entries.values()].reduce((sum, g) => sum + 1 + g, 0)
   const perHead = heads > 0 ? Math.round(priceCzk / heads) : null
 
+  const visible = players.filter((p) => playerMatchesQuery(p.name, query))
+
   return (
     <div className="flex flex-col gap-6">
+      {players.length > 0 && (
+        <PlayerSearch id={searchId} value={query} onChange={setQuery} />
+      )}
+
       <ul>
         {players.length === 0 && (
           <p className="py-3 text-meta text-chalk-dim">
             Zatím žádní aktivní hráči. Přidej je v sekci Hráči.
           </p>
         )}
-        {players.map((player) => {
+        {players.length > 0 && visible.length === 0 && (
+          <p className="py-3 text-meta text-chalk-dim">
+            Nikdo se jménem „{query}“. Zkus kratší kus jména.
+          </p>
+        )}
+        {visible.map((player) => {
           const present = entries.has(player.id)
           const guests = entries.get(player.id) ?? 0
           return (
@@ -124,7 +145,7 @@ export function AttendanceGrid({
         })}
       </ul>
 
-      <div className="flex items-end justify-between gap-4 border-t border-rule pt-3">
+      <div className="flex flex-col gap-4 border-t border-rule pt-3 sm:flex-row sm:items-end sm:justify-between">
         <div className="flex gap-6">
           <div>
             <div className="text-meta text-chalk-dim">Celkem hlav</div>
@@ -140,9 +161,14 @@ export function AttendanceGrid({
           </div>
         </div>
 
-        <div className="flex flex-col items-end gap-2">
+        <div className="flex flex-col gap-2 sm:items-end">
           {error && <span className="text-meta text-danger">{error}</span>}
-          <button type="button" onClick={save} disabled={pending} className="btn-primary">
+          <button
+            type="button"
+            onClick={save}
+            disabled={pending}
+            className={`${tone === 'primary' ? 'btn-primary' : 'btn-quiet'} w-full sm:w-auto`}
+          >
             {pending ? 'Ukládám…' : saved ? 'Uloženo' : 'Uložit docházku'}
           </button>
         </div>

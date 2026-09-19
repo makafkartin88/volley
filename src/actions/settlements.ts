@@ -30,7 +30,7 @@ export async function createSettlement(formData: FormData) {
   }
 
   await db.insert(settlements).values({ label, periodStart, periodEnd })
-  revalidatePath('/admin/vyuctovani')
+  revalidatePath('/admin')
 }
 
 /**
@@ -66,8 +66,7 @@ export async function closeSettlement(formData: FormData) {
   }
   await db.update(settlements).set({ closedAt: new Date() }).where(eq(settlements.id, id))
 
-  revalidatePath('/admin/vyuctovani')
-  revalidatePath(`/admin/vyuctovani/${id}`)
+  revalidatePath('/admin')
   revalidatePath('/platby')
 }
 
@@ -77,8 +76,7 @@ export async function reopenSettlement(formData: FormData) {
   const id = z.coerce.number().int().positive().parse(formData.get('id'))
   await db.delete(settlementItems).where(eq(settlementItems.settlementId, id))
   await db.update(settlements).set({ closedAt: null }).where(eq(settlements.id, id))
-  revalidatePath('/admin/vyuctovani')
-  revalidatePath(`/admin/vyuctovani/${id}`)
+  revalidatePath('/admin')
   revalidatePath('/platby')
 }
 
@@ -90,7 +88,6 @@ export async function togglePaid(formData: FormData) {
   await db.update(settlementItems)
     .set({ paid, paidAt: paid ? new Date() : null })
     .where(and(eq(settlementItems.id, itemId), eq(settlementItems.settlementId, settlementId)))
-  revalidatePath('/admin/vyuctovani')
-  revalidatePath(`/admin/vyuctovani/${settlementId}`)
+  revalidatePath('/admin')
   revalidatePath('/platby')
 }

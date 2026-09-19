@@ -15,7 +15,7 @@ export async function createPlayer(formData: FormData) {
   const name = nameSchema.parse(formData.get('name'))
   const contact = contactSchema.parse(formData.get('contact') ?? '')
   await db.insert(players).values({ name, contact: contact || null })
-  revalidatePath('/admin/hraci')
+  revalidatePath('/admin')
 }
 
 export async function updatePlayer(formData: FormData) {
@@ -24,19 +24,19 @@ export async function updatePlayer(formData: FormData) {
   const name = nameSchema.parse(formData.get('name'))
   const contact = contactSchema.parse(formData.get('contact') ?? '')
   await db.update(players).set({ name, contact: contact || null }).where(eq(players.id, id))
-  revalidatePath('/admin/hraci')
+  revalidatePath('/admin')
 }
 
 export async function archivePlayer(formData: FormData) {
   await requireAdmin()
   const id = z.coerce.number().int().positive().parse(formData.get('id'))
   await db.update(players).set({ archivedAt: new Date() }).where(eq(players.id, id))
-  revalidatePath('/admin/hraci')
+  revalidatePath('/admin')
 }
 
 export async function restorePlayer(formData: FormData) {
   await requireAdmin()
   const id = z.coerce.number().int().positive().parse(formData.get('id'))
   await db.update(players).set({ archivedAt: null }).where(eq(players.id, id))
-  revalidatePath('/admin/hraci')
+  revalidatePath('/admin')
 }

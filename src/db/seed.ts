@@ -4,7 +4,7 @@ import { players } from './schema'
 
 /**
  * Kádr podle WhatsApp skupiny (stav k 14. 9. 2026).
- * Není to soupiska — kdo nechodí na tréninky, archivuje se v /admin/hraci.
+ * Není to soupiska — kdo nechodí na tréninky, archivuje se v sekci Hráči.
  */
 const ROSTER = [
   'Anetka Bouberlová',

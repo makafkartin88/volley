@@ -1,54 +1,56 @@
 import {
   archivePlayer, createPlayer, restorePlayer, updatePlayer,
 } from '@/actions/players'
-import { getAllPlayers } from '@/db/queries'
-import { PageHeader } from '@/components/PageHeader'
+import { AdminSection } from '@/components/admin/AdminSection'
 
-export default async function HraciPage() {
-  const allPlayers = await getAllPlayers()
-  const active = allPlayers.filter((p) => p.archivedAt === null)
-  const archived = allPlayers.filter((p) => p.archivedAt !== null)
+type Player = {
+  id: number
+  name: string
+  contact: string | null
+  archivedAt: Date | null
+}
+
+const inputClass =
+  'mt-1 w-full border border-chalk-dim bg-transparent px-3 py-2 text-body text-chalk'
+
+/** Kádr pro zápis docházky a vyúčtování. */
+export function PlayersSection({ players }: { players: Player[] }) {
+  const active = players.filter((p) => p.archivedAt === null)
+  const archived = players.filter((p) => p.archivedAt !== null)
 
   return (
-    <div className="flex flex-col gap-8">
-      <PageHeader title="Hráči" subtitle="Kádr pro zápis docházky a vyúčtování." />
-
+    <AdminSection title="Hráči" count={String(active.length)}>
       <form action={createPlayer} className="flex flex-col gap-3">
         <div className="flex flex-col gap-3 sm:flex-row">
           <label className="flex-1">
             <span className="text-meta text-chalk-dim">Jméno</span>
-            <input
-              type="text"
-              name="name"
-              required
-              maxLength={60}
-              className="mt-1 w-full border border-chalk-dim bg-transparent px-3 py-2 text-body text-chalk"
-            />
+            <input type="text" name="name" required maxLength={60} className={inputClass} />
           </label>
           <label className="flex-1">
             <span className="text-meta text-chalk-dim">Kontakt</span>
-            <input
-              type="text"
-              name="contact"
-              maxLength={100}
-              className="mt-1 w-full border border-chalk-dim bg-transparent px-3 py-2 text-body text-chalk"
-            />
+            <input type="text" name="contact" maxLength={100} className={inputClass} />
           </label>
         </div>
-        <button type="submit" className="btn-primary self-start">
-          Přidat
+        <button type="submit" className="btn-quiet self-start">
+          Přidat hráče
         </button>
       </form>
 
       <section className="flex flex-col">
-        {active.length === 0 && <p className="text-meta text-chalk-dim">Zatím žádní aktivní hráči.</p>}
+        {active.length === 0 && (
+          <p className="measure py-4 text-chalk-dim">
+            Zatím žádný hráč. Přidej první jméno a můžeš zapisovat docházku.
+          </p>
+        )}
         {active.map((player) => (
-          <details key={player.id} className="group">
-            <summary className="row cursor-pointer list-none">
-              <div className="flex flex-col">
+          <details key={player.id}>
+            <summary className="row min-h-11 cursor-pointer list-none">
+              <span className="flex flex-col">
                 <span className="text-body text-chalk">{player.name}</span>
-                {player.contact && <span className="text-meta text-chalk-dim">{player.contact}</span>}
-              </div>
+                {player.contact && (
+                  <span className="text-meta text-chalk-dim">{player.contact}</span>
+                )}
+              </span>
               <span className="text-meta text-chalk-dim">Upravit</span>
             </summary>
             <div className="flex flex-col gap-3 py-3 sm:flex-row sm:items-end">
@@ -62,7 +64,7 @@ export default async function HraciPage() {
                     required
                     maxLength={60}
                     defaultValue={player.name}
-                    className="mt-1 w-full border border-chalk-dim bg-transparent px-3 py-2 text-body text-chalk"
+                    className={inputClass}
                   />
                 </label>
                 <label className="flex-1">
@@ -72,7 +74,7 @@ export default async function HraciPage() {
                     name="contact"
                     maxLength={100}
                     defaultValue={player.contact ?? ''}
-                    className="mt-1 w-full border border-chalk-dim bg-transparent px-3 py-2 text-body text-chalk"
+                    className={inputClass}
                   />
                 </label>
                 <button type="submit" className="btn-quiet self-start sm:self-auto">
@@ -90,18 +92,22 @@ export default async function HraciPage() {
         ))}
       </section>
 
-      <details className="group">
-        <summary className="cursor-pointer text-meta text-chalk-dim">
+      <details>
+        <summary className="flex min-h-11 cursor-pointer items-center text-meta text-chalk-dim">
           Archivovaní ({archived.length})
         </summary>
         <section className="mt-3 flex flex-col">
-          {archived.length === 0 && <p className="text-meta text-chalk-dim">Nikdo není archivovaný.</p>}
+          {archived.length === 0 && (
+            <p className="text-meta text-chalk-dim">Nikdo není archivovaný.</p>
+          )}
           {archived.map((player) => (
             <div key={player.id} className="row">
-              <div className="flex flex-col">
+              <span className="flex flex-col">
                 <span className="text-body text-chalk">{player.name}</span>
-                {player.contact && <span className="text-meta text-chalk-dim">{player.contact}</span>}
-              </div>
+                {player.contact && (
+                  <span className="text-meta text-chalk-dim">{player.contact}</span>
+                )}
+              </span>
               <form action={restorePlayer}>
                 <input type="hidden" name="id" value={player.id} />
                 <button type="submit" className="btn-quiet">
@@ -112,6 +118,6 @@ export default async function HraciPage() {
           ))}
         </section>
       </details>
-    </div>
+    </AdminSection>
   )
 }
