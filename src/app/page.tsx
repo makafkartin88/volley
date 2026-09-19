@@ -4,7 +4,7 @@ import {
   getLatestClosedSettlement, getMatchesWithAppearances, getTrainingsWithAttendance,
 } from '@/db/queries'
 import { teamWinRate } from '@/domain/stats'
-import { formatCzk, formatDate, formatWinRate, nextSundayIso } from '@/lib/format'
+import { formatCzk, formatDate, formatWinRate, nextSundayIso, todayIso } from '@/lib/format'
 
 // „Nejbližší trénink“ a „dnešek“ pro filtr budoucích tréninků se počítají
 // z aktuálního času, ne z času buildu.
@@ -17,7 +17,7 @@ export default async function Home() {
     getLatestClosedSettlement(),
   ])
 
-  const today = new Date().toISOString().slice(0, 10)
+  const today = todayIso()
   const upcoming = trainings
     .filter((t) => t.status === 'held' && t.date >= today)
     .sort((a, b) => a.date.localeCompare(b.date))[0]

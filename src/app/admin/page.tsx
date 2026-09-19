@@ -9,7 +9,7 @@ import {
   getActivePlayers, getAllPlayers, getMatchesWithAppearances, getSettlements,
   getTrainingsWithAttendance,
 } from '@/db/queries'
-import { formatCzk, formatDate } from '@/lib/format'
+import { formatCzk, formatDate, todayIso } from '@/lib/format'
 
 // Nepokrytý trénink dneška se má hlásit hned po tréninku, ne až zítra,
 // a předvyplněné datum se počítá z aktuálního času, ne z času buildu.
@@ -29,7 +29,7 @@ export default async function AdminPage() {
     getAllPlayers(),
   ])
 
-  const today = new Date().toISOString().slice(0, 10)
+  const today = todayIso()
   const byDateAsc = [...trainings].sort((a, b) => a.date.localeCompare(b.date))
 
   // 1. proběhlý trénink bez docházky (nejstarší), 2. nejbližší nadcházející.

@@ -27,6 +27,19 @@ export function formatWinRate(rate: number | null): string {
   return `${Math.round(rate * 100)} %`
 }
 
+/**
+ * ISO datum (YYYY-MM-DD) dneška v místním čase.
+ *
+ * Záměrně ne `new Date().toISOString()` — ten vrací UTC, takže mezi půlnocí
+ * a druhou ranní (letní čas) hlásí ještě včerejšek. Docházka se zapisuje
+ * v neděli večer, tedy přesně kolem téhle hranice.
+ */
+export function todayIso(from: Date = new Date()): string {
+  const date = new Date(from)
+  date.setHours(12, 0, 0, 0) // poledne, aby letní čas neposunul den
+  return date.toISOString().slice(0, 10)
+}
+
 /** ISO datum (YYYY-MM-DD) nejbližší neděle. Když je dnes neděle, vrátí dnešek. */
 export function nextSundayIso(from: Date = new Date()): string {
   const date = new Date(from)
