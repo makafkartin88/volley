@@ -42,6 +42,14 @@ export function AttendanceChart({ points }: { points: ChartPoint[] }) {
     return () => observer.disconnect()
   }, [])
 
+  // Když se graf nevejde, odroluj na konec — nejnovější trénink zajímá
+  // člověka víc než ten z června, a na telefonu je vidět jen výsek.
+  useEffect(() => {
+    const el = wrapRef.current
+    if (!el) return
+    el.scrollLeft = el.scrollWidth
+  }, [avail, points.length])
+
   const move = useCallback((from: number, step: number) => {
     const next = Math.min(points.length - 1, Math.max(0, from + step))
     setSelected(next)

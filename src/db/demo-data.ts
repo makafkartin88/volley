@@ -59,8 +59,12 @@ export const DEMO_MATCHES = [
 ]
 
 /**
- * FNV-1a normalizovaná do 0–1. Deterministická, takže stejný seed dá vždycky
- * stejnou docházku — ukázková data se nemění mezi spuštěními.
+ * FNV-1a s lavinovým promícháním (fmix32 z MurmurHash3), normalizovaná do 0–1.
+ * Deterministická, takže stejný seed dá vždycky stejnou docházku.
+ *
+ * Bez toho závěrečného promíchání korelují hodnoty se stejným prefixem —
+ * u seedu „jméno|datum“ se mění jen pár posledních znaků, takže hráč vycházel
+ * buď skoro pokaždé, nebo skoro nikdy, místo aby se držel své pravděpodobnosti.
  */
 export function seededUnit(seed: string): number {
   let h = 2166136261
@@ -68,5 +72,10 @@ export function seededUnit(seed: string): number {
     h ^= seed.charCodeAt(i)
     h = Math.imul(h, 16777619)
   }
+  h ^= h >>> 16
+  h = Math.imul(h, 2246822507)
+  h ^= h >>> 13
+  h = Math.imul(h, 3266489909)
+  h ^= h >>> 16
   return (h >>> 0) / 4294967296
 }
