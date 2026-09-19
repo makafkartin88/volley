@@ -1,6 +1,6 @@
 'use server'
 
-import { eq } from 'drizzle-orm'
+import { and, eq, gte, lte } from 'drizzle-orm'
 import { revalidatePath } from 'next/cache'
 import { z } from 'zod'
 import { db } from '@/db'
@@ -20,6 +20,15 @@ export async function createSettlement(formData: FormData) {
   if (periodEnd < periodStart) {
     throw new Error('Konec období nemůže být před začátkem.')
   }
+
+  // Překrývající se období by dvakrát vyúčtovalo stejné tréninky se dvěma
+  // reálnými QR kódy — standardní kontrola překryvu intervalů.
+  const [overlapping] = await db.select().from(settlements)
+    .where(and(lte(settlements.periodStart, periodEnd), gte(settlements.periodEnd, periodStart)))
+  if (overlapping) {
+    throw new Error(`Období se překrývá s existujícím vyúčtováním "${overlapping.label}".`)
+  }
+
   await db.insert(settlements).values({ label, periodStart, periodEnd })
   revalidatePath('/admin/vyuctovani')
 }
@@ -42,12 +51,18 @@ export async function closeSettlement(formData: FormData) {
   const inputs = await loadTrainingInputs(settlement.periodStart, settlement.periodEnd)
   const result = calculateSettlement(inputs)
 
+  // Neon HTTP driver nepodporuje vícepříkazové transakce (`neon-http`
+  // session vždy vyhodí "No transactions support"), takže insert a update
+  // nejde spojit do jedné transakce. Místo toho je insert bezpečný pro
+  // opakování: `onConflictDoNothing` na (settlementId, playerId) zaručí, že
+  // když update selže a akce se zopakuje, druhý insert nespadne na unique
+  // constraintu a uzavření pak projde.
   if (result.debts.length > 0) {
     await db.insert(settlementItems).values(
       result.debts.map((debt) => ({
         settlementId: id, playerId: debt.playerId, amountCzk: debt.amountCzk,
       }))
-    )
+    ).onConflictDoNothing()
   }
   await db.update(settlements).set({ closedAt: new Date() }).where(eq(settlements.id, id))
 
@@ -74,7 +89,7 @@ export async function togglePaid(formData: FormData) {
   const paid = formData.get('paid') === 'true'
   await db.update(settlementItems)
     .set({ paid, paidAt: paid ? new Date() : null })
-    .where(eq(settlementItems.id, itemId))
+    .where(and(eq(settlementItems.id, itemId), eq(settlementItems.settlementId, settlementId)))
   revalidatePath('/admin/vyuctovani')
   revalidatePath(`/admin/vyuctovani/${settlementId}`)
   revalidatePath('/platby')

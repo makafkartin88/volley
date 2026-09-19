@@ -28,6 +28,7 @@ export function AttendanceGrid({
   )
   const [pending, startTransition] = useTransition()
   const [saved, setSaved] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
   function toggle(playerId: number) {
     setEntries((prev) => {
@@ -47,8 +48,13 @@ export function AttendanceGrid({
   function save() {
     const payload = [...entries.entries()].map(([playerId, guests]) => ({ playerId, guests }))
     startTransition(async () => {
-      await saveAttendance(trainingId, payload)
-      setSaved(true)
+      try {
+        await saveAttendance(trainingId, payload)
+        setSaved(true)
+        setError(null)
+      } catch {
+        setError('Uložení se nepovedlo. Zkus to znovu.')
+      }
     })
   }
 
@@ -134,9 +140,12 @@ export function AttendanceGrid({
           </div>
         </div>
 
-        <button type="button" onClick={save} disabled={pending} className="btn-primary">
-          {pending ? 'Ukládám…' : saved ? 'Uloženo' : 'Uložit docházku'}
-        </button>
+        <div className="flex flex-col items-end gap-2">
+          {error && <span className="text-meta text-danger">{error}</span>}
+          <button type="button" onClick={save} disabled={pending} className="btn-primary">
+            {pending ? 'Ukládám…' : saved ? 'Uloženo' : 'Uložit docházku'}
+          </button>
+        </div>
       </div>
     </div>
   )

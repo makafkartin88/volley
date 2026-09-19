@@ -1,7 +1,7 @@
 import Link from 'next/link'
 import { PageHeader } from '@/components/PageHeader'
 import {
-  getHeadCounts, getSettlementDetail, getSettlements, getTrainings,
+  getHeadCounts, getLatestClosedSettlement, getSettlements, getTrainings,
 } from '@/db/queries'
 import { formatDate } from '@/lib/format'
 
@@ -16,10 +16,11 @@ const tiles = [
 export const dynamic = 'force-dynamic'
 
 export default async function AdminPage() {
-  const [trainings, headCounts, settlementsList] = await Promise.all([
+  const [trainings, headCounts, settlementsList, lastClosedDetail] = await Promise.all([
     getTrainings(),
     getHeadCounts(),
     getSettlements(),
+    getLatestClosedSettlement(),
   ])
 
   const today = new Date().toISOString().slice(0, 10)
@@ -29,8 +30,7 @@ export default async function AdminPage() {
 
   const openSettlements = settlementsList.filter((s) => !s.closedAt)
 
-  const lastClosed = settlementsList.find((s) => s.closedAt)
-  const lastClosedDetail = lastClosed ? await getSettlementDetail(lastClosed.id) : null
+  const lastClosed = lastClosedDetail?.settlement ?? null
   const unpaidCount = lastClosedDetail
     ? lastClosedDetail.items.filter((item) => !item.paid).length
     : 0

@@ -22,6 +22,7 @@ export function LineupPicker({
   const [selected, setSelected] = useState<Set<number>>(() => new Set(initial))
   const [pending, startTransition] = useTransition()
   const [saved, setSaved] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
   function toggle(playerId: number) {
     setSelected((prev) => {
@@ -36,8 +37,13 @@ export function LineupPicker({
   function save() {
     const payload = [...selected]
     startTransition(async () => {
-      await saveAppearances(matchId, payload)
-      setSaved(true)
+      try {
+        await saveAppearances(matchId, payload)
+        setSaved(true)
+        setError(null)
+      } catch {
+        setError('Uložení se nepovedlo. Zkus to znovu.')
+      }
     })
   }
 
@@ -84,9 +90,12 @@ export function LineupPicker({
           </div>
         </div>
 
-        <button type="button" onClick={save} disabled={pending} className="btn-primary">
-          {pending ? 'Ukládám…' : saved ? 'Uloženo' : 'Uložit sestavu'}
-        </button>
+        <div className="flex flex-col items-end gap-2">
+          {error && <span className="text-meta text-danger">{error}</span>}
+          <button type="button" onClick={save} disabled={pending} className="btn-primary">
+            {pending ? 'Ukládám…' : saved ? 'Uloženo' : 'Uložit sestavu'}
+          </button>
+        </div>
       </div>
     </div>
   )
