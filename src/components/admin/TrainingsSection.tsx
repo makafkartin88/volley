@@ -1,5 +1,4 @@
 import { createTraining } from '@/actions/trainings'
-import { AdminSection } from '@/components/admin/AdminSection'
 import { TrainingStatusToggle, trainingStatusLabel } from '@/components/admin/TrainingStatus'
 import { AttendanceGrid } from '@/components/AttendanceGrid'
 import { formatCzk, formatDate, nextSundayIso } from '@/lib/format'
@@ -61,7 +60,7 @@ export function TrainingsSection({
   players: Player[]
 }) {
   return (
-    <AdminSection title="Tréninky" count={String(trainings.length)}>
+    <div className="flex flex-col gap-6">
       <CreateTrainingForm />
 
       <section className="flex flex-col">
@@ -93,6 +92,6 @@ export function TrainingsSection({
           </details>
         ))}
       </section>
-    </AdminSection>
+    </div>
   )
 }

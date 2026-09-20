@@ -1,7 +1,6 @@
 import {
   archivePlayer, createPlayer, restorePlayer, updatePlayer,
 } from '@/actions/players'
-import { AdminSection } from '@/components/admin/AdminSection'
 
 type Player = {
   id: number
@@ -19,7 +18,7 @@ export function PlayersSection({ players }: { players: Player[] }) {
   const archived = players.filter((p) => p.archivedAt !== null)
 
   return (
-    <AdminSection title="Hráči" count={String(active.length)}>
+    <div className="flex flex-col gap-6">
       <form action={createPlayer} className="flex flex-col gap-3">
         <div className="flex flex-col gap-3 sm:flex-row">
           <label className="flex-1">
@@ -118,6 +117,6 @@ export function PlayersSection({ players }: { players: Player[] }) {
           ))}
         </section>
       </details>
-    </AdminSection>
+    </div>
   )
 }

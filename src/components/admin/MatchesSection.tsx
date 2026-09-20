@@ -1,8 +1,6 @@
 import { createMatch, deleteMatch, updateMatch } from '@/actions/matches'
-import { AdminSection } from '@/components/admin/AdminSection'
 import { LineupPicker } from '@/components/LineupPicker'
-import { teamWinRate } from '@/domain/stats'
-import { formatDate, formatWinRate } from '@/lib/format'
+import { formatDate } from '@/lib/format'
 
 type Player = { id: number; name: string }
 
@@ -74,16 +72,8 @@ export function MatchesSection({
   players: Player[]
   today: string
 }) {
-  const record = teamWinRate(matches)
-
   return (
-    <AdminSection title="Zápasy" count={String(matches.length)}>
-      <p className="text-meta text-chalk-dim">
-        {record.played === 0
-          ? 'Založ zápas a naklikej sestavu.'
-          : `${record.wins}–${record.losses}, ${formatWinRate(record.rate)} úspěšnost`}
-      </p>
-
+    <div className="flex flex-col gap-6">
       <form action={createMatch} className="flex flex-col gap-3">
         <div className="flex flex-col gap-3 sm:flex-row">
           <label className="sm:w-40">
@@ -200,6 +190,6 @@ export function MatchesSection({
           </details>
         ))}
       </section>
-    </AdminSection>
+    </div>
   )
 }

@@ -23,7 +23,7 @@ export async function createMatch(formData: FormData) {
     scoreText: formData.get('scoreText') ?? '',
   })
   await db.insert(matches).values({ ...input, scoreText: input.scoreText || null })
-  revalidatePath('/admin')
+  revalidatePath('/admin/zapasy')
   revalidatePath('/zapasy')
 }
 
@@ -38,7 +38,7 @@ export async function updateMatch(formData: FormData) {
   })
   await db.update(matches).set({ ...input, scoreText: input.scoreText || null })
     .where(eq(matches.id, id))
-  revalidatePath('/admin')
+  revalidatePath('/admin/zapasy')
   revalidatePath('/zapasy')
 }
 
@@ -46,7 +46,7 @@ export async function deleteMatch(formData: FormData) {
   await requireAdmin()
   const id = z.coerce.number().int().positive().parse(formData.get('id'))
   await db.delete(matches).where(eq(matches.id, id))
-  revalidatePath('/admin')
+  revalidatePath('/admin/zapasy')
   revalidatePath('/zapasy')
 }
 
@@ -62,6 +62,6 @@ export async function saveAppearances(matchId: number, playerIds: unknown) {
   if (parsed.length > 0) {
     await db.insert(matchAppearances).values(parsed.map((playerId) => ({ matchId: id, playerId })))
   }
-  revalidatePath('/admin')
+  revalidatePath('/admin/zapasy')
   revalidatePath('/zapasy')
 }

@@ -1,7 +1,6 @@
 import {
   closeSettlement, createSettlement, reopenSettlement, togglePaid,
 } from '@/actions/settlements'
-import { AdminSection } from '@/components/admin/AdminSection'
 import { Money } from '@/components/Money'
 import { getSettlementDetail, loadTrainingInputs } from '@/db/queries'
 import { calculateSettlement } from '@/domain/settlement'
@@ -18,8 +17,8 @@ export type SettlementRow = {
 const inputClass =
   'mt-1 w-full border border-chalk-dim bg-transparent px-3 py-2 text-body text-chalk placeholder:text-chalk-dim'
 
-/** „1 rozpracované“, „2 rozpracovaná“, „5 rozpracovaných“. */
-function openLabel(n: number): string {
+/** „1 rozpracované“, „2 rozpracovaná“, „5 rozpracovaných“. Pro podtitulek stránky. */
+export function openLabel(n: number): string {
   if (n === 1) return '1 rozpracované'
   if (n < 5) return `${n} rozpracovaná`
   return `${n} rozpracovaných`
@@ -32,11 +31,8 @@ export function SettlementsSection({
   settlements: SettlementRow[]
   nameById: Map<number, string>
 }) {
-  const open = settlements.filter((s) => !s.closedAt).length
-  const count = open > 0 ? `${settlements.length}, ${openLabel(open)}` : String(settlements.length)
-
   return (
-    <AdminSection title="Vyúčtování" count={count}>
+    <div className="flex flex-col gap-6">
       <form action={createSettlement} className="flex flex-col gap-3">
         <label>
           <span className="text-meta text-chalk-dim">Název období</span>
@@ -96,7 +92,7 @@ export function SettlementsSection({
           </details>
         ))}
       </section>
-    </AdminSection>
+    </div>
   )
 }
 

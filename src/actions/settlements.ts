@@ -31,6 +31,7 @@ export async function createSettlement(formData: FormData) {
 
   await db.insert(settlements).values({ label, periodStart, periodEnd })
   revalidatePath('/admin')
+  revalidatePath('/admin/vyuctovani')
 }
 
 /**
@@ -67,7 +68,9 @@ export async function closeSettlement(formData: FormData) {
   await db.update(settlements).set({ closedAt: new Date() }).where(eq(settlements.id, id))
 
   revalidatePath('/admin')
+  revalidatePath('/admin/vyuctovani')
   revalidatePath('/platby')
+  revalidatePath('/')
 }
 
 /** Zruší uzavření a zahodí zmrazené částky (i příznaky zaplaceno), aby šlo přepočítat. */
@@ -77,7 +80,9 @@ export async function reopenSettlement(formData: FormData) {
   await db.delete(settlementItems).where(eq(settlementItems.settlementId, id))
   await db.update(settlements).set({ closedAt: null }).where(eq(settlements.id, id))
   revalidatePath('/admin')
+  revalidatePath('/admin/vyuctovani')
   revalidatePath('/platby')
+  revalidatePath('/')
 }
 
 export async function togglePaid(formData: FormData) {
@@ -89,5 +94,7 @@ export async function togglePaid(formData: FormData) {
     .set({ paid, paidAt: paid ? new Date() : null })
     .where(and(eq(settlementItems.id, itemId), eq(settlementItems.settlementId, settlementId)))
   revalidatePath('/admin')
+  revalidatePath('/admin/vyuctovani')
   revalidatePath('/platby')
+  revalidatePath('/')
 }
