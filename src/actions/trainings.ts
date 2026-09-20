@@ -14,6 +14,8 @@ export async function createTraining(formData: FormData) {
     .parse(formData.get('priceCzk') || 1350)
   await db.insert(trainings).values({ date, priceCzk })
   revalidatePath('/admin')
+  revalidatePath('/treninky')
+  revalidatePath('/')
 }
 
 export async function setTrainingStatus(formData: FormData) {
@@ -22,6 +24,8 @@ export async function setTrainingStatus(formData: FormData) {
   const status = z.enum(['held', 'cancelled']).parse(formData.get('status'))
   await db.update(trainings).set({ status }).where(eq(trainings.id, id))
   revalidatePath('/admin')
+  revalidatePath('/treninky')
+  revalidatePath('/')
 }
 
 const entriesSchema = z.array(z.object({
