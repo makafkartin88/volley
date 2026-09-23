@@ -3,11 +3,12 @@ import Link from 'next/link'
 import { Money } from '@/components/Money'
 import { PageHeader } from '@/components/PageHeader'
 import {
-  getMatchesWithAppearances, getPlayerById, getSettlementsWithItems, getTrainingsWithAttendance,
+  getAllSettlementExpenses, getMatchesWithAppearances, getPlayerById, getSettlementsWithItems,
+  getTrainingsWithAttendance,
 } from '@/db/queries'
 import { attendanceStat, heldTrainings } from '@/lib/attendance'
 import { playerWinRate } from '@/domain/stats'
-import { formatDate, formatWinRate, plural } from '@/lib/format'
+import { formatCzk, formatDate, formatWinRate, plural } from '@/lib/format'
 
 export const dynamic = 'force-dynamic'
 
@@ -27,13 +28,25 @@ export default async function HracDetailPage({
   const id = Number(idParam)
   if (!Number.isInteger(id) || id <= 0) notFound()
 
-  const [player, trainings, settlements, matches] = await Promise.all([
+  const [player, trainings, settlements, matches, allExpenses] = await Promise.all([
     getPlayerById(id),
     getTrainingsWithAttendance(),
     getSettlementsWithItems(),
     getMatchesWithAppearances(),
+    getAllSettlementExpenses(),
   ])
   if (!player) notFound()
+
+  // Mimořádné výdaje (ples apod.), na kterých se hráč podílel, seskupené
+  // podle vyúčtování — poznámka pod řádkem plateb, ne nová sekce.
+  const expenseNotesBySettlement = new Map<number, string[]>()
+  for (const expense of allExpenses) {
+    if (!expense.playerIds.includes(player.id)) continue
+    const shareCzk = Math.round(expense.amountCzk / expense.playerIds.length)
+    const list = expenseNotesBySettlement.get(expense.settlementId) ?? []
+    list.push(`${expense.note} (${formatCzk(shareCzk)})`)
+    expenseNotesBySettlement.set(expense.settlementId, list)
+  }
 
   const held = heldTrainings(trainings)
   const stat = attendanceStat(held, player)
@@ -109,17 +122,25 @@ export default async function HracDetailPage({
           </p>
         ) : (
           <ul>
-            {payments.map(({ settlement, item }) => (
-              <li key={settlement.id} className="row">
-                <span className="flex flex-col">
-                  <span className="text-body text-chalk">{settlement.label}</span>
-                  <span className="text-meta text-chalk-dim">
-                    {item.paid ? 'Zaplaceno' : settlement.closedAt ? 'Nezaplaceno' : 'Koncept'}
+            {payments.map(({ settlement, item }) => {
+              const expenseNotes = expenseNotesBySettlement.get(settlement.id) ?? []
+              return (
+                <li key={settlement.id} className="row">
+                  <span className="flex flex-col">
+                    <span className="text-body text-chalk">{settlement.label}</span>
+                    <span className="text-meta text-chalk-dim">
+                      {item.paid ? 'Zaplaceno' : settlement.closedAt ? 'Nezaplaceno' : 'Koncept'}
+                    </span>
+                    {expenseNotes.length > 0 && (
+                      <span className="text-meta text-chalk-dim">
+                        vč. {expenseNotes.join(', ')}
+                      </span>
+                    )}
                   </span>
-                </span>
-                <Money value={item.amountCzk} tone={item.paid ? 'settled' : 'owed'} />
-              </li>
-            ))}
+                  <Money value={item.amountCzk} tone={item.paid ? 'settled' : 'owed'} />
+                </li>
+              )
+            })}
           </ul>
         )}
       </section>

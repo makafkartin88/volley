@@ -1,14 +1,15 @@
 import { PageHeader } from '@/components/PageHeader'
 import { openLabel, SettlementsSection } from '@/components/admin/SettlementsSection'
-import { getAllPlayers, getSettlements } from '@/db/queries'
+import { getActivePlayers, getAllPlayers, getSettlements } from '@/db/queries'
 
 // Koncept se přepočítává živě, takže stránka nesmí zůstat na cache z buildu.
 export const dynamic = 'force-dynamic'
 
 export default async function AdminVyuctovaniPage() {
-  const [settlements, players] = await Promise.all([
+  const [settlements, players, activePlayers] = await Promise.all([
     getSettlements(),
     getAllPlayers(),
+    getActivePlayers(),
   ])
   // Jména všech hráčů, i archivovaných — dluh může zůstat i po archivaci.
   const nameById = new Map(players.map((p) => [p.id, p.name]))
@@ -23,7 +24,11 @@ export default async function AdminVyuctovaniPage() {
   return (
     <div className="flex flex-col gap-8">
       <PageHeader title="Vyúčtování" subtitle={subtitle} />
-      <SettlementsSection settlements={settlements} nameById={nameById} />
+      <SettlementsSection
+        settlements={settlements}
+        nameById={nameById}
+        activePlayers={activePlayers}
+      />
     </div>
   )
 }

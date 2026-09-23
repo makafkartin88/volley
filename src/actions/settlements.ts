@@ -4,8 +4,8 @@ import { and, eq, gte, lte } from 'drizzle-orm'
 import { revalidatePath } from 'next/cache'
 import { z } from 'zod'
 import { db } from '@/db'
-import { settlements, settlementItems } from '@/db/schema'
-import { loadTrainingInputs } from '@/db/queries'
+import { settlements, settlementItems, settlementExpenses, settlementExpenseParticipants } from '@/db/schema'
+import { loadTrainingInputs, loadSettlementExpenses } from '@/db/queries'
 import { calculateSettlement } from '@/domain/settlement'
 import { requireAdmin } from '@/lib/auth'
 
@@ -35,6 +35,48 @@ export async function createSettlement(formData: FormData) {
 }
 
 /**
+ * Přidá mimořádný výdaj (např. ples) do rozpracovaného vyúčtování. Jde jen
+ * do konceptu — po uzavření se tréninky ani výdaje retroaktivně nemění.
+ */
+export async function createSettlementExpense(formData: FormData) {
+  await requireAdmin()
+  const settlementId = z.coerce.number().int().positive().parse(formData.get('settlementId'))
+  const note = z.string().trim().min(1, 'Doplň poznámku').max(120).parse(formData.get('note'))
+  const amountCzk = z.coerce.number().int().positive().max(1000000).parse(formData.get('amountCzk'))
+  const playerIds = z.array(z.coerce.number().int().positive())
+    .min(1, 'Vyber aspoň jednoho hráče')
+    .parse(formData.getAll('playerIds'))
+
+  // Nejde přidat výdaj do už uzavřeného vyúčtování — stejné pravidlo jako
+  // u tréninků, které se po uzavření taky nemění.
+  const [settlement] = await db.select().from(settlements).where(eq(settlements.id, settlementId))
+  if (!settlement) throw new Error('Vyúčtování neexistuje.')
+  if (settlement.closedAt) throw new Error('Tohle období je už uzavřené, výdaj už nejde přidat.')
+
+  const [expense] = await db.insert(settlementExpenses)
+    .values({ settlementId, note, amountCzk })
+    .returning()
+  await db.insert(settlementExpenseParticipants).values(
+    playerIds.map((playerId) => ({ expenseId: expense.id, playerId }))
+  )
+  revalidatePath('/admin/vyuctovani')
+}
+
+/** Smaže výdaj — jen z rozpracovaného vyúčtování, viz `createSettlementExpense`. */
+export async function deleteSettlementExpense(formData: FormData) {
+  await requireAdmin()
+  const id = z.coerce.number().int().positive().parse(formData.get('id'))
+  // Smazání z už uzavřeného vyúčtování by nesouhlasilo s tím, co bylo
+  // zmrazeno do settlement_items — jen z rozpracovaného.
+  const [expense] = await db.select().from(settlementExpenses).where(eq(settlementExpenses.id, id))
+  if (!expense) return
+  const [settlement] = await db.select().from(settlements).where(eq(settlements.id, expense.settlementId))
+  if (settlement?.closedAt) throw new Error('Tohle období je už uzavřené, výdaj už nejde smazat.')
+  await db.delete(settlementExpenses).where(eq(settlementExpenses.id, id))
+  revalidatePath('/admin/vyuctovani')
+}
+
+/**
  * Zmrazí spočítané částky do settlement_items.
  *
  * Všechna finanční logika žije v `calculateSettlement` (Task 4, otestováno) —
@@ -50,7 +92,8 @@ export async function closeSettlement(formData: FormData) {
   if (settlement.closedAt) throw new Error('Tohle období je už uzavřené.')
 
   const inputs = await loadTrainingInputs(settlement.periodStart, settlement.periodEnd)
-  const result = calculateSettlement(inputs)
+  const expenseInputs = await loadSettlementExpenses(id)
+  const result = calculateSettlement(inputs, expenseInputs)
 
   // Neon HTTP driver nepodporuje vícepříkazové transakce (`neon-http`
   // session vždy vyhodí "No transactions support"), takže insert a update

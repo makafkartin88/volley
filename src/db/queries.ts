@@ -4,6 +4,7 @@ import {
 import { db } from '@/db'
 import {
   players, trainings, attendance, matches, matchAppearances, settlements, settlementItems,
+  settlementExpenses, settlementExpenseParticipants,
 } from '@/db/schema'
 import type { TrainingInput } from '@/domain/settlement'
 
@@ -112,6 +113,46 @@ export async function getSettlementDetail(id: number) {
  * Otevřené (koncept) vyúčtování se pro tuhle kartu nepočítá — dokud není
  * uzavřené, dluhy ještě nejsou finální.
  */
+export type ExpenseRow = { id: number; note: string; amountCzk: number; playerIds: number[] }
+
+/**
+ * Výdaje jednoho vyúčtování ve tvaru, který čeká `calculateSettlement` z
+ * domény. Dva dotazy a spojení v JS jako jinde v tomhle souboru — výdajů je
+ * na období hrstka.
+ */
+export async function loadSettlementExpenses(settlementId: number): Promise<ExpenseRow[]> {
+  const rows = await db.select().from(settlementExpenses)
+    .where(eq(settlementExpenses.settlementId, settlementId))
+  const participants = await db.select().from(settlementExpenseParticipants)
+  return rows.map((expense) => ({
+    id: expense.id,
+    note: expense.note,
+    amountCzk: expense.amountCzk,
+    playerIds: participants
+      .filter((p) => p.expenseId === expense.id)
+      .map((p) => p.playerId),
+  }))
+}
+
+/**
+ * Všechny mimořádné výdaje napříč obdobími, i s ID vyúčtování. Pro
+ * `/hraci/[id]`, kde hráč u každého vyúčtování vidí poznámku, na jaké
+ * výdaje se skládal — stejná dvoudotazová logika jako `loadSettlementExpenses`.
+ */
+export async function getAllSettlementExpenses(): Promise<(ExpenseRow & { settlementId: number })[]> {
+  const rows = await db.select().from(settlementExpenses)
+  const participants = await db.select().from(settlementExpenseParticipants)
+  return rows.map((expense) => ({
+    id: expense.id,
+    settlementId: expense.settlementId,
+    note: expense.note,
+    amountCzk: expense.amountCzk,
+    playerIds: participants
+      .filter((p) => p.expenseId === expense.id)
+      .map((p) => p.playerId),
+  }))
+}
+
 export async function getLatestClosedSettlement() {
   const rows = await db.select().from(settlements)
     .where(isNotNull(settlements.closedAt))
