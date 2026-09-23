@@ -67,7 +67,35 @@ export const settlementItems = pgTable('settlement_items', {
   amountCzk: integer('amount_czk').notNull(),
   paid: boolean('paid').notNull().default(false),
   paidAt: timestamp('paid_at'),
+  // Hráč sám označí "odeslal jsem platbu" — jen signál pro organizátora,
+  // ne důkaz. `paid` zůstává jediný autoritativní zdroj pravdy.
+  playerConfirmedAt: timestamp('player_confirmed_at'),
   note: text('note'),
 }, (t) => ({
   uniquePlayerPerSettlement: unique().on(t.settlementId, t.playerId),
+}))
+
+/**
+ * Mimořádný výdaj v rámci vyúčtování (např. ples), rozpočítaný rovným
+ * dílem mezi vybrané hráče — stejné zaokrouhlení na konci jako u tréninků.
+ * Jde přidat jen do rozpracovaného vyúčtování; po uzavření se zmrazí do
+ * `settlementItems` spolu s náklady na haly a záznam zůstává kvůli
+ * transparentnosti (hráč v historii vidí, za co platil).
+ */
+export const settlementExpenses = pgTable('settlement_expenses', {
+  id: serial('id').primaryKey(),
+  settlementId: integer('settlement_id').notNull()
+    .references(() => settlements.id, { onDelete: 'cascade' }),
+  note: text('note').notNull(),
+  amountCzk: integer('amount_czk').notNull(),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+})
+
+export const settlementExpenseParticipants = pgTable('settlement_expense_participants', {
+  expenseId: integer('expense_id').notNull()
+    .references(() => settlementExpenses.id, { onDelete: 'cascade' }),
+  playerId: integer('player_id').notNull()
+    .references(() => players.id, { onDelete: 'cascade' }),
+}, (t) => ({
+  pk: primaryKey({ columns: [t.expenseId, t.playerId] }),
 }))
