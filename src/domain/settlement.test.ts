@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { calculateSettlement, type TrainingInput } from './settlement'
+import { calculateSettlement, type ExpenseInput, type TrainingInput } from './settlement'
 
 /** Zkratka: trénink, kde uvedení hráči byli bez hostů. */
 function held(id: number, priceCzk: number, playerIds: number[]): TrainingInput {
@@ -124,5 +124,76 @@ describe('calculateSettlement', () => {
   it('vrací dluhy seřazené podle playerId', () => {
     const result = calculateSettlement([held(1, 900, [30, 10, 20])])
     expect(result.debts.map((d) => d.playerId)).toEqual([10, 20, 30])
+  })
+})
+
+describe('calculateSettlement s mimořádnými výdaji', () => {
+  function expense(id: number, amountCzk: number, playerIds: number[]): ExpenseInput {
+    return { id, amountCzk, playerIds }
+  }
+
+  it('rozdělí výdaj rovným dílem mezi vybrané — ples 1000 Kč pro 5 lidí', () => {
+    const result = calculateSettlement([], [expense(1, 1000, [10, 20, 30, 40, 50])])
+    for (const playerId of [10, 20, 30, 40, 50]) {
+      expect(debtOf(result, playerId)).toBe(200)
+    }
+    expect(result.totalExpensesCzk).toBe(1000)
+    expect(result.totalChargedCzk).toBe(1000)
+    expect(result.differenceCzk).toBe(0)
+  })
+
+  it('přičte se k dluhu za tréninky, ne vedle něj', () => {
+    const result = calculateSettlement(
+      [held(1, 1200, [10, 20, 30])], // 400 na hlavu
+      [expense(1, 300, [10, 20, 30])], // +100 na hlavu
+    )
+    expect(debtOf(result, 10)).toBe(500)
+    expect(result.totalPriceCzk).toBe(1200)
+    expect(result.totalExpensesCzk).toBe(300)
+    expect(result.totalChargedCzk).toBe(1500)
+  })
+
+  it('hráč bez docházky v období ale s výdajem se přesto objeví v dluzích', () => {
+    const result = calculateSettlement(
+      [held(1, 1000, [10, 20])],
+      [expense(1, 300, [10, 20, 99])], // hráč 99 na trénink nedorazil, na ples ano
+    )
+    expect(debtOf(result, 99)).toBe(100)
+  })
+
+  it('zaokrouhluje trénink a výdaj dohromady, ne každý zvlášť', () => {
+    // 201 Kč / 2 hlavy = 100.5 — samo o sobě by se zaokrouhlilo na 101.
+    // Trénink i výdaj dají hráči 10 přesně 100.5 + 100.5 = 201.0, což je
+    // celé číslo — odděleným zaokrouhlením (101 + 101 = 202) by uteklo o Kč.
+    const result = calculateSettlement(
+      [held(1, 201, [10, 20])],
+      [expense(1, 201, [10, 20])],
+    )
+    expect(debtOf(result, 10)).toBe(201)
+    expect(debtOf(result, 20)).toBe(201)
+    expect(result.totalChargedCzk).toBe(402)
+    expect(result.differenceCzk).toBe(0)
+  })
+
+  it('výdaj bez jediného účastníka přeskočí a nahlásí ho, nespadne na dělení nulou', () => {
+    const result = calculateSettlement([], [expense(1, 500, [])])
+    expect(result.skippedExpenseIds).toEqual([1])
+    expect(result.totalExpensesCzk).toBe(0)
+    expect(result.debts).toEqual([])
+  })
+
+  it('sečte více výdajů do totalExpensesCzk', () => {
+    const result = calculateSettlement(
+      [],
+      [expense(1, 400, [10, 20]), expense(2, 600, [10, 20])],
+    )
+    expect(result.totalExpensesCzk).toBe(1000)
+    expect(debtOf(result, 10)).toBe(500)
+  })
+
+  it('bez druhého argumentu funguje jako dřív (zpětná kompatibilita)', () => {
+    const result = calculateSettlement([held(1, 1000, [10, 20])])
+    expect(result.totalExpensesCzk).toBe(0)
+    expect(result.skippedExpenseIds).toEqual([])
   })
 })

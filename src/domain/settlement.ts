@@ -9,25 +9,41 @@ export type TrainingInput = {
 
 export type PlayerDebt = { playerId: number; amountCzk: number }
 
+/** Mimořádný výdaj (např. ples), rozpočítaný rovným dílem mezi `playerIds`. */
+export type ExpenseInput = {
+  id: number
+  amountCzk: number
+  playerIds: number[]
+}
+
 export type SettlementResult = {
   debts: PlayerDebt[]
   totalPriceCzk: number
+  totalExpensesCzk: number
   totalChargedCzk: number
   differenceCzk: number
   skippedTrainingIds: number[]
+  /** Mimořádné výdaje bez jediného účastníka — nedají se rozpočítat, na nic se nepřičetly. */
+  skippedExpenseIds: number[]
 }
 
 /**
- * Rozpočítá cenu hal mezi přítomné hráče.
+ * Rozpočítá cenu hal a mimořádné výdaje mezi hráče.
  *
- * Podíly se drží jako přesná desetinná čísla a zaokrouhlují se až na součtu
- * za celé období — zaokrouhlování po jednotlivých trénincích by při osmi
- * trénincích uteklo o jednotky korun.
+ * Obojí sčítá do stejné mapy přesných (nezaokrouhlených) podílů na hráče
+ * a zaokrouhluje se až na úplném konci, po součtu za celé období —
+ * zaokrouhlování zvlášť pro tréninky a zvlášť pro výdaje by mohlo uteknout
+ * o korunu jinam, než kam se zaokrouhlí součet obojího najednou.
  */
-export function calculateSettlement(trainings: TrainingInput[]): SettlementResult {
+export function calculateSettlement(
+  trainings: TrainingInput[],
+  expenses: ExpenseInput[] = [],
+): SettlementResult {
   const exactShares = new Map<number, number>()
   const skippedTrainingIds: number[] = []
+  const skippedExpenseIds: number[] = []
   let totalPriceCzk = 0
+  let totalExpensesCzk = 0
 
   for (const training of trainings) {
     if (training.status !== 'held') continue
@@ -47,6 +63,20 @@ export function calculateSettlement(trainings: TrainingInput[]): SettlementResul
     }
   }
 
+  for (const expense of expenses) {
+    if (expense.playerIds.length === 0) {
+      skippedExpenseIds.push(expense.id)
+      continue
+    }
+
+    totalExpensesCzk += expense.amountCzk
+    const perHead = expense.amountCzk / expense.playerIds.length
+
+    for (const playerId of expense.playerIds) {
+      exactShares.set(playerId, (exactShares.get(playerId) ?? 0) + perHead)
+    }
+  }
+
   const debts: PlayerDebt[] = [...exactShares.entries()]
     .map(([playerId, exact]) => ({ playerId, amountCzk: Math.round(exact) }))
     .sort((a, b) => a.playerId - b.playerId)
@@ -56,8 +86,10 @@ export function calculateSettlement(trainings: TrainingInput[]): SettlementResul
   return {
     debts,
     totalPriceCzk,
+    totalExpensesCzk,
     totalChargedCzk,
-    differenceCzk: totalChargedCzk - totalPriceCzk,
+    differenceCzk: totalChargedCzk - totalPriceCzk - totalExpensesCzk,
     skippedTrainingIds,
+    skippedExpenseIds,
   }
 }
