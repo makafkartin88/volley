@@ -99,3 +99,31 @@ export const settlementExpenseParticipants = pgTable('settlement_expense_partici
 }, (t) => ({
   pk: primaryKey({ columns: [t.expenseId, t.playerId] }),
 }))
+
+/**
+ * Jediný řádek (`id` vždy 1) — ID aktuální ligy na avlka.cz, které si
+ * organizátor nastaví v adminu. Mění se každou sezónu (postup/sestup),
+ * takže nejde natvrdo v kódu.
+ */
+export const avlConfig = pgTable('avl_config', {
+  id: integer('id').primaryKey(),
+  leagueId: text('league_id'),
+  updatedAt: timestamp('updated_at').notNull().defaultNow(),
+})
+
+/**
+ * Návrh zápasu objevený týdenní kontrolou avlka.cz (viz `src/domain/
+ * avl-tournament.ts`), čekající na potvrzení organizátorem. Datum i skóre
+ * jsou z turnajové stránky, takže na rozdíl od ručního importu se
+ * nemusí dohledávat — jen se potvrdí, nebo zamítne jako omyl.
+ */
+export const avlSuggestions = pgTable('avl_suggestions', {
+  id: serial('id').primaryKey(),
+  date: date('date').notNull(),
+  opponent: text('opponent').notNull(),
+  result: matchResult('result').notNull(),
+  scoreText: text('score_text').notNull(),
+  discoveredAt: timestamp('discovered_at').notNull().defaultNow(),
+}, (t) => ({
+  uniqueMatch: unique().on(t.date, t.opponent, t.scoreText),
+}))

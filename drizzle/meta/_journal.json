@@ -15,6 +15,13 @@
       "when": 1790170442697,
       "tag": "0001_ambiguous_arclight",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1790173505577,
+      "tag": "0002_foamy_toro",
+      "breakpoints": true
     }
   ]
 }
