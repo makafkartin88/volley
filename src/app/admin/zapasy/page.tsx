@@ -1,7 +1,10 @@
 import { PageHeader } from '@/components/PageHeader'
 import { AvlImport } from '@/components/admin/AvlImport'
+import { AvlWeeklyCheck } from '@/components/admin/AvlSuggestions'
 import { MatchesSection } from '@/components/admin/MatchesSection'
-import { getActivePlayers, getMatchesWithAppearances } from '@/db/queries'
+import {
+  getActivePlayers, getAvlLeagueId, getAvlSuggestions, getMatchesWithAppearances,
+} from '@/db/queries'
 import { teamWinRate } from '@/domain/stats'
 import { formatWinRate, todayIso } from '@/lib/format'
 
@@ -9,9 +12,11 @@ import { formatWinRate, todayIso } from '@/lib/format'
 export const dynamic = 'force-dynamic'
 
 export default async function AdminZapasyPage() {
-  const [matches, players] = await Promise.all([
+  const [matches, players, leagueId, suggestions] = await Promise.all([
     getMatchesWithAppearances(),
     getActivePlayers(),
+    getAvlLeagueId(),
+    getAvlSuggestions(),
   ])
   const record = teamWinRate(matches)
 
@@ -29,6 +34,7 @@ export default async function AdminZapasyPage() {
       <AvlImport
         existingMatches={matches.map((m) => ({ opponent: m.opponent, scoreText: m.scoreText }))}
       />
+      <AvlWeeklyCheck leagueId={leagueId} suggestions={suggestions} />
     </div>
   )
 }

@@ -19,6 +19,9 @@ export type AvlMatchRow = {
   scoreText: string
 }
 
+/** Jméno týmu na avlka.cz — sdílené oběma parsery (crosstable i turnajové stránky). */
+export const OUR_TEAM_NAME = 'Smečaři bez hranic'
+
 /** Rozloží pár HTML entit, které se na avlka.cz reálně objevují v týmových jménech. */
 function unescapeHtml(value: string): string {
   return value

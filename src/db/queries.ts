@@ -4,7 +4,7 @@ import {
 import { db } from '@/db'
 import {
   players, trainings, attendance, matches, matchAppearances, settlements, settlementItems,
-  settlementExpenses, settlementExpenseParticipants,
+  settlementExpenses, settlementExpenseParticipants, avlConfig, avlSuggestions,
 } from '@/db/schema'
 import type { TrainingInput } from '@/domain/settlement'
 
@@ -151,6 +151,17 @@ export async function getAllSettlementExpenses(): Promise<(ExpenseRow & { settle
       .filter((p) => p.expenseId === expense.id)
       .map((p) => p.playerId),
   }))
+}
+
+/** ID aktuální ligy na avlka.cz nastavené organizátorem, nebo `null`. */
+export async function getAvlLeagueId(): Promise<string | null> {
+  const [row] = await db.select().from(avlConfig).where(eq(avlConfig.id, 1))
+  return row?.leagueId ?? null
+}
+
+/** Nevyřízené návrhy zápasů z týdenní kontroly avlka.cz, od nejnovějšího. */
+export async function getAvlSuggestions() {
+  return db.select().from(avlSuggestions).orderBy(desc(avlSuggestions.discoveredAt))
 }
 
 export async function getLatestClosedSettlement() {

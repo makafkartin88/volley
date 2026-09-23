@@ -1,10 +1,13 @@
 'use server'
 
+import { eq } from 'drizzle-orm'
+import { revalidatePath } from 'next/cache'
+import { db } from '@/db'
+import { avlConfig, avlSuggestions } from '@/db/schema'
 import { requireAdmin } from '@/lib/auth'
-import { parseAvlCrosstable, type AvlMatchRow } from '@/domain/avl'
+import { parseAvlCrosstable, OUR_TEAM_NAME, type AvlMatchRow } from '@/domain/avl'
+import { createMatch } from '@/actions/matches'
 import { z } from 'zod'
-
-const OUR_TEAM_NAME = 'Smečaři bez hranic'
 
 export type AvlFetchResult =
   | { status: 'ok'; matches: AvlMatchRow[] }
@@ -35,4 +38,47 @@ export async function fetchAvlMatches(leagueId: string): Promise<AvlFetchResult>
     return { status: 'not_found' }
   }
   return { status: 'ok', matches }
+}
+
+/** Uloží ID aktuální ligy (týdenní kontrola z `/api/avl-check` ho pak čte). */
+export async function setAvlLeagueId(formData: FormData) {
+  await requireAdmin()
+  const raw = formData.get('leagueId')
+  const trimmed = typeof raw === 'string' ? raw.trim() : ''
+  const leagueId = trimmed === ''
+    ? null
+    : z.string().regex(/^\d+$/, 'ID ligy musí být číslo').parse(trimmed)
+
+  await db
+    .insert(avlConfig)
+    .values({ id: 1, leagueId, updatedAt: new Date() })
+    .onConflictDoUpdate({ target: avlConfig.id, set: { leagueId, updatedAt: new Date() } })
+  revalidatePath('/admin/zapasy')
+}
+
+/** Potvrzení návrhu z týdenní kontroly — založí skutečný zápas a návrh smaže. */
+export async function confirmAvlSuggestion(formData: FormData) {
+  await requireAdmin()
+  const id = z.coerce.number().int().positive().parse(formData.get('id'))
+
+  const [suggestion] = await db.select().from(avlSuggestions).where(eq(avlSuggestions.id, id))
+  if (!suggestion) return
+
+  const matchFormData = new FormData()
+  matchFormData.set('date', suggestion.date)
+  matchFormData.set('opponent', suggestion.opponent)
+  matchFormData.set('result', suggestion.result)
+  matchFormData.set('scoreText', suggestion.scoreText)
+  await createMatch(matchFormData)
+
+  await db.delete(avlSuggestions).where(eq(avlSuggestions.id, id))
+  revalidatePath('/admin/zapasy')
+}
+
+/** Zamítnutí návrhu (např. omyl nebo duplicita) — jen smaže, nic nezakládá. */
+export async function dismissAvlSuggestion(formData: FormData) {
+  await requireAdmin()
+  const id = z.coerce.number().int().positive().parse(formData.get('id'))
+  await db.delete(avlSuggestions).where(eq(avlSuggestions.id, id))
+  revalidatePath('/admin/zapasy')
 }
