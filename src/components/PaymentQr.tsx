@@ -19,12 +19,13 @@ export async function PaymentQr({
   message: string
   variableSymbol: string
 }) {
+  const payeeName = getPayeeName()
   const payload = buildSpdPayload({
     iban: getPayeeIban(),
     amountCzk,
     message,
     variableSymbol,
-    payeeName: getPayeeName(),
+    payeeName,
   })
   const svg = await QRCode.toString(payload, {
     type: 'svg',
@@ -45,6 +46,12 @@ export async function PaymentQr({
         dangerouslySetInnerHTML={{ __html: svg }}
       />
       <dl className="flex flex-col gap-1 text-meta">
+        {payeeName && (
+          <div className="flex justify-between gap-4">
+            <dt className="text-chalk-dim">Příjemce</dt>
+            <dd className="text-chalk">{payeeName}</dd>
+          </div>
+        )}
         <div className="flex justify-between gap-4">
           <dt className="text-chalk-dim">Účet</dt>
           <dd className="text-chalk">{getReadableAccount()}</dd>
