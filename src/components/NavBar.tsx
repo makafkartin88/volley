@@ -42,7 +42,7 @@ export function NavBar({
               <Link
                 href={link.href}
                 aria-current={active ? 'page' : undefined}
-                className={`relative flex min-h-14 items-center justify-center px-1 text-meta sm:min-h-12 sm:justify-start ${
+                className={`relative flex min-h-16 items-center justify-center px-1 text-meta sm:min-h-12 sm:justify-start ${
                   active ? 'text-chalk' : 'text-chalk-dim'
                 }`}
               >
