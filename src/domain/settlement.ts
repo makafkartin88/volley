@@ -34,6 +34,9 @@ export type SettlementResult = {
  * a zaokrouhluje se až na úplném konci, po součtu za celé období —
  * zaokrouhlování zvlášť pro tréninky a zvlášť pro výdaje by mohlo uteknout
  * o korunu jinam, než kam se zaokrouhlí součet obojího najednou.
+ *
+ * Vždy nahoru (`Math.ceil`), nikdy na nejbližší celé číslo — na hale se
+ * platí přesně tolik, kolik stojí, takže se nikdy nesmí vybrat míň.
  */
 export function calculateSettlement(
   trainings: TrainingInput[],
@@ -78,7 +81,7 @@ export function calculateSettlement(
   }
 
   const debts: PlayerDebt[] = [...exactShares.entries()]
-    .map(([playerId, exact]) => ({ playerId, amountCzk: Math.round(exact) }))
+    .map(([playerId, exact]) => ({ playerId, amountCzk: Math.ceil(exact) }))
     .sort((a, b) => a.playerId - b.playerId)
 
   const totalChargedCzk = debts.reduce((sum, debt) => sum + debt.amountCzk, 0)

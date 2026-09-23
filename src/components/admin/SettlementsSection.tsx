@@ -218,10 +218,6 @@ async function DraftView({
           <span className="text-meta text-chalk-dim">Součet naúčtovaného</span>
           <Money value={result.totalChargedCzk} />
         </div>
-        <div className="row">
-          <span className="text-meta text-chalk-dim">Rozdíl (zaokrouhlení)</span>
-          <Money value={result.differenceCzk} />
-        </div>
       </section>
 
       <form action={closeSettlement} className="self-start">

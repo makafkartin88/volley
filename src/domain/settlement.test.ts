@@ -80,8 +80,8 @@ describe('calculateSettlement', () => {
       held(1, 1000, [10, 20]),
       held(2, 1000, [10, 20, 30]),
     ])
-    expect(debtOf(result, 30)).toBe(333)
-    expect(debtOf(result, 10)).toBe(833) // 500 + 333.33 = 833.33 -> 833
+    expect(debtOf(result, 30)).toBe(334) // 333.33 -> nahoru na 334
+    expect(debtOf(result, 10)).toBe(834) // 500 + 333.33 = 833.33 -> nahoru na 834
   })
 
   it('zaokrouhluje až na součtu za období, ne po trénincích', () => {
@@ -96,12 +96,20 @@ describe('calculateSettlement', () => {
     expect(result.differenceCzk).toBe(0)
   })
 
-  it('zaokrouhluje matematicky nahoru při přesné půlce', () => {
+  it('zaokrouhluje vždy nahoru, i přesnou půlku', () => {
     const result = calculateSettlement([held(1, 1350, [10, 20, 30, 40])])
     // 1350/4 = 337.5 -> 338
     expect(debtOf(result, 10)).toBe(338)
     expect(result.totalChargedCzk).toBe(1352)
     expect(result.differenceCzk).toBe(2)
+  })
+
+  it('zaokrouhluje nahoru i necelou desetinu, ne jen půlku — nikdy se nesmí vybrat míň, než kolik hala stojí', () => {
+    // 1000/3 = 333.333… — "na nejbližší celé" by dalo 333, tady musí být 334.
+    const result = calculateSettlement([held(1, 1000, [10, 20, 30])])
+    expect(debtOf(result, 10)).toBe(334)
+    expect(result.totalChargedCzk).toBe(1002)
+    expect(result.totalPriceCzk).toBe(1000)
   })
 
   it('drift nepřekročí 1 Kč na hráče ani po osmi trénincích', () => {

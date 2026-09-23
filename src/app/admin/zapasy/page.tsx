@@ -3,7 +3,7 @@ import { AvlImport } from '@/components/admin/AvlImport'
 import { AvlWeeklyCheck } from '@/components/admin/AvlSuggestions'
 import { MatchesSection } from '@/components/admin/MatchesSection'
 import {
-  getActivePlayers, getAvlLeagueId, getAvlSuggestions, getMatchesWithAppearances,
+  getAllPlayers, getAvlLeagueId, getAvlSuggestions, getMatchesWithAppearances,
 } from '@/db/queries'
 import { teamWinRate } from '@/domain/stats'
 import { formatWinRate, todayIso } from '@/lib/format'
@@ -14,7 +14,9 @@ export const dynamic = 'force-dynamic'
 export default async function AdminZapasyPage() {
   const [matches, players, leagueId, suggestions] = await Promise.all([
     getMatchesWithAppearances(),
-    getActivePlayers(),
+    // Všichni hráči, i archivovaní — sestava zápasu se může retroaktivně
+    // doplňovat i o někoho, kdo mezitím z týmu odešel.
+    getAllPlayers(),
     getAvlLeagueId(),
     getAvlSuggestions(),
   ])
