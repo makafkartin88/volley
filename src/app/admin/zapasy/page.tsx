@@ -1,4 +1,5 @@
 import { PageHeader } from '@/components/PageHeader'
+import { AvlImport } from '@/components/admin/AvlImport'
 import { MatchesSection } from '@/components/admin/MatchesSection'
 import { getActivePlayers, getMatchesWithAppearances } from '@/db/queries'
 import { teamWinRate } from '@/domain/stats'
@@ -25,6 +26,9 @@ export default async function AdminZapasyPage() {
         }
       />
       <MatchesSection matches={matches} players={players} today={todayIso()} />
+      <AvlImport
+        existingMatches={matches.map((m) => ({ opponent: m.opponent, scoreText: m.scoreText }))}
+      />
     </div>
   )
 }
