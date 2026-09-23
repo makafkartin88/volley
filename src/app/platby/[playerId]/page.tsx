@@ -1,4 +1,5 @@
 import { notFound } from 'next/navigation'
+import { markPaymentSent, unmarkPaymentSent } from '@/actions/settlements'
 import { PageHeader } from '@/components/PageHeader'
 import { PaymentQr } from '@/components/PaymentQr'
 import { getAllPlayers, getLatestClosedSettlement } from '@/db/queries'
@@ -54,6 +55,19 @@ export default async function PlatbaDetailPage({
         <p className="measure text-body text-chalk-dim">
           ✓ Zaplaceno{item.paidAt ? ` · ${formatDate(item.paidAt)}` : ''}
         </p>
+      ) : item.playerConfirmedAt ? (
+        <div className="flex flex-col gap-4">
+          <p className="measure text-body text-chalk-dim">
+            Čeká na potvrzení organizátorem · {formatDate(item.playerConfirmedAt)}
+          </p>
+          <form action={unmarkPaymentSent} className="self-start">
+            <input type="hidden" name="itemId" value={item.id} />
+            <input type="hidden" name="playerId" value={playerId} />
+            <button type="submit" className="text-meta text-chalk-dim underline">
+              Zrušit, ještě jsem neodeslal
+            </button>
+          </form>
+        </div>
       ) : (
         <div className="flex flex-col gap-6">
           <p className="display text-hero leading-none text-pink">{formatCzk(item.amountCzk)}</p>
@@ -62,6 +76,13 @@ export default async function PlatbaDetailPage({
             message={`Volejbal ${settlement.label}`}
             variableSymbol={buildVariableSymbol(settlement.periodEnd, playerId)}
           />
+          <form action={markPaymentSent} className="self-start">
+            <input type="hidden" name="itemId" value={item.id} />
+            <input type="hidden" name="playerId" value={playerId} />
+            <button type="submit" className="btn-quiet">
+              Odeslal(a) jsem platbu
+            </button>
+          </form>
         </div>
       )}
     </div>

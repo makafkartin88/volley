@@ -190,6 +190,11 @@ async function ClosedView({
           <div key={item.id} className="row">
             <span className={`text-body ${item.paid ? 'text-chalk-dim line-through' : 'text-chalk'}`}>
               {nameById.get(item.playerId) ?? `Hráč #${item.playerId}`}
+              {!item.paid && item.playerConfirmedAt && (
+                <span className="ml-2 text-meta text-chalk-dim">
+                  Odesláno {formatDate(item.playerConfirmedAt)}
+                </span>
+              )}
             </span>
             <span className="flex items-center gap-3">
               <Money value={item.amountCzk} tone={item.paid ? 'settled' : 'owed'} />

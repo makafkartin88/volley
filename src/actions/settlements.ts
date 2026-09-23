@@ -98,3 +98,30 @@ export async function togglePaid(formData: FormData) {
   revalidatePath('/platby')
   revalidatePath('/')
 }
+
+/**
+ * Hráč si na veřejné stránce `/platby/[playerId]` sám označí, že platbu
+ * odeslal. Bez `requireAdmin()` záměrně — odkaz na tuhle stránku má hráč bez
+ * přihlášení, stejně jako u zbytku veřejných platebních stránek. Je to jen
+ * signál pro organizátora, `paid` zůstává jediným zdrojem pravdy.
+ */
+export async function markPaymentSent(formData: FormData) {
+  const itemId = z.coerce.number().int().positive().parse(formData.get('itemId'))
+  await db.update(settlementItems)
+    .set({ playerConfirmedAt: new Date() })
+    .where(eq(settlementItems.id, itemId))
+  revalidatePath('/platby')
+  const playerId = formData.get('playerId')
+  if (playerId) revalidatePath(`/platby/${playerId}`)
+}
+
+/** Vrátí hráče zpátky do stavu s QR kódem, když se odeslání platby označil omylem. */
+export async function unmarkPaymentSent(formData: FormData) {
+  const itemId = z.coerce.number().int().positive().parse(formData.get('itemId'))
+  await db.update(settlementItems)
+    .set({ playerConfirmedAt: null })
+    .where(eq(settlementItems.id, itemId))
+  revalidatePath('/platby')
+  const playerId = formData.get('playerId')
+  if (playerId) revalidatePath(`/platby/${playerId}`)
+}
