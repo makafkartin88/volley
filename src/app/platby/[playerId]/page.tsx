@@ -1,8 +1,12 @@
 import { notFound } from 'next/navigation'
 import { markPaymentSent, unmarkPaymentSent } from '@/actions/settlements'
+import { Money } from '@/components/Money'
 import { PageHeader } from '@/components/PageHeader'
 import { PaymentQr } from '@/components/PaymentQr'
-import { getAllPlayers, getLatestClosedSettlement } from '@/db/queries'
+import {
+  getAllPlayers, getLatestClosedSettlement, loadSettlementExpenses, loadTrainingBreakdownInputs,
+} from '@/db/queries'
+import { breakdownForPlayer } from '@/domain/breakdown'
 import { formatCzk, formatDate } from '@/lib/format'
 
 export const dynamic = 'force-dynamic'
@@ -47,6 +51,12 @@ export default async function PlatbaDetailPage({
     )
   }
 
+  const [trainings, expenses] = await Promise.all([
+    loadTrainingBreakdownInputs(settlement.periodStart, settlement.periodEnd),
+    loadSettlementExpenses(settlement.id),
+  ])
+  const breakdown = breakdownForPlayer(trainings, expenses, playerId)
+
   return (
     <div className="flex flex-col gap-8">
       <PageHeader title={player.name} subtitle={settlement.label} />
@@ -85,6 +95,46 @@ export default async function PlatbaDetailPage({
           </form>
         </div>
       )}
+
+      <details className="border-b border-rule">
+        <summary className="flex min-h-11 cursor-pointer list-none items-center py-3 text-body text-chalk">
+          Rozbor
+        </summary>
+        <div className="flex flex-col gap-6 pt-2 pb-4">
+          {breakdown.trainings.length > 0 && (
+            <div className="flex flex-col gap-3">
+              <h3 className="text-meta text-chalk-dim">Tréninky</h3>
+              <section className="flex flex-col">
+                {breakdown.trainings.map((row) => (
+                  <div key={row.trainingId} className="row">
+                    <span className="text-body text-chalk">{formatDate(row.date)}</span>
+                    <Money value={row.amountCzk} />
+                  </div>
+                ))}
+              </section>
+            </div>
+          )}
+
+          {breakdown.expenses.length > 0 && (
+            <div className="flex flex-col gap-3">
+              <h3 className="text-meta text-chalk-dim">Další výdaje</h3>
+              <section className="flex flex-col">
+                {breakdown.expenses.map((row) => (
+                  <div key={row.expenseId} className="row">
+                    <span className="text-body text-chalk">{row.note}</span>
+                    <Money value={row.amountCzk} />
+                  </div>
+                ))}
+              </section>
+            </div>
+          )}
+
+          <div className="row border-t border-rule">
+            <span className="text-meta text-chalk-dim">Celkem</span>
+            <Money value={item.amountCzk} />
+          </div>
+        </div>
+      </details>
     </div>
   )
 }

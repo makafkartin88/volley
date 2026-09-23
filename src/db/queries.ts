@@ -7,6 +7,7 @@ import {
   settlementExpenses, settlementExpenseParticipants, avlConfig, avlSuggestions,
 } from '@/db/schema'
 import type { TrainingInput } from '@/domain/settlement'
+import type { TrainingBreakdownInput } from '@/domain/breakdown'
 
 /**
  * Řadíme v JS, ne v SQL. Postgres by podle své collation mohl poslat Šárku
@@ -69,6 +70,29 @@ export async function loadTrainingInputs(
   const all = await db.select().from(attendance)
   return rows.map((training) => ({
     id: training.id,
+    priceCzk: training.priceCzk,
+    status: training.status,
+    attendance: all
+      .filter((a) => a.trainingId === training.id)
+      .map((a) => ({ playerId: a.playerId, guests: a.guests })),
+  }))
+}
+
+/**
+ * Tréninky v období ve tvaru pro rozpis hráčovy platby (`/platby/[playerId]`),
+ * tedy `loadTrainingInputs` navíc s datem. Stejná dvoudotazová logika jako
+ * `loadTrainingInputs` — objemy jsou malé.
+ */
+export async function loadTrainingBreakdownInputs(
+  periodStart: string,
+  periodEnd: string,
+): Promise<TrainingBreakdownInput[]> {
+  const rows = await db.select().from(trainings)
+    .where(and(gte(trainings.date, periodStart), lte(trainings.date, periodEnd)))
+  const all = await db.select().from(attendance)
+  return rows.map((training) => ({
+    id: training.id,
+    date: training.date,
     priceCzk: training.priceCzk,
     status: training.status,
     attendance: all
