@@ -1,5 +1,6 @@
 {
   "crons": [
-    { "path": "/api/avl-check", "schedule": "0 6 * * 1" }
+    { "path": "/api/avl-check", "schedule": "0 6 * * 1" },
+    { "path": "/api/auto-create", "schedule": "0 5 * * *" }
   ]
 }
