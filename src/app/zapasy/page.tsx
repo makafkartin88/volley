@@ -1,6 +1,5 @@
 import { getAllPlayers, getMatchesWithAppearances } from '@/db/queries'
 import { PageHeader } from '@/components/PageHeader'
-import { StatCard } from '@/components/StatCard'
 import { playerWinRate, teamWinRate } from '@/domain/stats'
 import { formatDate, formatWinRate } from '@/lib/format'
 
@@ -23,12 +22,25 @@ export default async function ZapasyPage() {
     <div className="flex flex-col gap-8">
       <PageHeader title="Zápasy" subtitle="Výsledky a úspěšnost týmu i jednotlivců." />
 
-      <StatCard label="Týmová úspěšnost" value={formatWinRate(record.rate)} />
-
-      <div className="grid grid-cols-3 gap-3">
-        <StatCard label="Výhry" value={record.wins} />
-        <StatCard label="Prohry" value={record.losses} />
-        <StatCard label="Odehráno" value={record.played} />
+      <div className="border-t border-rule pt-2">
+        <div className="text-meta text-chalk-dim">Týmová úspěšnost</div>
+        <div className="display mt-0.5 text-hero leading-none tabular-nums text-chalk">
+          {formatWinRate(record.rate)}
+        </div>
+        <div className="mt-3 grid grid-cols-3 gap-3 border-t border-rule pt-3">
+          <div>
+            <div className="text-meta text-chalk-dim">Výhry</div>
+            <div className="display mt-0.5 text-title tabular-nums text-chalk">{record.wins}</div>
+          </div>
+          <div>
+            <div className="text-meta text-chalk-dim">Prohry</div>
+            <div className="display mt-0.5 text-title tabular-nums text-chalk">{record.losses}</div>
+          </div>
+          <div>
+            <div className="text-meta text-chalk-dim">Odehráno</div>
+            <div className="display mt-0.5 text-title tabular-nums text-chalk">{record.played}</div>
+          </div>
+        </div>
       </div>
 
       <section>
@@ -70,27 +82,28 @@ export default async function ZapasyPage() {
         {table.length === 0 ? (
           <p className="measure py-4 text-chalk-dim">Zatím nikdo neodehrál zápas.</p>
         ) : (
-          <div className="flex flex-col">
-            <div className="grid grid-cols-[1fr_auto_auto_auto_auto] gap-x-3 border-b border-rule pb-2 text-meta text-chalk-dim">
-              <span>Hráč</span>
-              <span className="text-right">Odehráno</span>
-              <span className="text-right">Výhry</span>
-              <span className="text-right">Prohry</span>
-              <span className="text-right">Úspěšnost</span>
-            </div>
-            {table.map(({ player, rate }) => (
-              <div
-                key={player.id}
-                className="grid grid-cols-[1fr_auto_auto_auto_auto] gap-x-3 border-b border-rule py-2 text-body text-chalk"
-              >
-                <span>{player.name}</span>
-                <span className="text-right tabular-nums text-chalk-dim">{rate.played}</span>
-                <span className="text-right tabular-nums text-chalk-dim">{rate.wins}</span>
-                <span className="text-right tabular-nums text-chalk-dim">{rate.losses}</span>
-                <span className="text-right tabular-nums">{formatWinRate(rate.rate)}</span>
-              </div>
-            ))}
-          </div>
+          <table className="w-full text-left">
+            <thead>
+              <tr className="border-b border-rule text-meta text-chalk-dim">
+                <th scope="col" className="py-2 font-normal">Hráč</th>
+                <th scope="col" className="py-2 text-right font-normal">Odehráno</th>
+                <th scope="col" className="py-2 text-right font-normal">Výhry</th>
+                <th scope="col" className="py-2 text-right font-normal">Prohry</th>
+                <th scope="col" className="py-2 text-right font-normal">Úspěšnost</th>
+              </tr>
+            </thead>
+            <tbody>
+              {table.map(({ player, rate }) => (
+                <tr key={player.id} className="border-b border-rule text-body text-chalk">
+                  <td className="py-2">{player.name}</td>
+                  <td className="py-2 text-right tabular-nums text-chalk-dim">{rate.played}</td>
+                  <td className="py-2 text-right tabular-nums text-chalk-dim">{rate.wins}</td>
+                  <td className="py-2 text-right tabular-nums text-chalk-dim">{rate.losses}</td>
+                  <td className="py-2 text-right tabular-nums">{formatWinRate(rate.rate)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         )}
       </section>
     </div>
