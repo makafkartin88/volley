@@ -1,6 +1,6 @@
 import { getAllPlayers, getTrainingsWithAttendance } from '@/db/queries'
 import { PageHeader } from '@/components/PageHeader'
-import { formatCzk, formatDate } from '@/lib/format'
+import { formatCzk, formatDate, plural } from '@/lib/format'
 
 export const dynamic = 'force-dynamic'
 
@@ -48,7 +48,7 @@ export default async function TreninkyPage() {
                 <span className="text-meta text-chalk-dim">{whoText}</span>
               </span>
               <span className="text-right text-meta text-chalk-dim">
-                {training.heads} hlav
+                {training.heads} {plural(training.heads, 'hráč', 'hráči', 'hráčů')}
                 {!cancelled && training.heads > 0 && (
                   <>
                     <br />

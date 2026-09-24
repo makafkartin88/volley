@@ -1,7 +1,7 @@
 import { createTraining } from '@/actions/trainings'
 import { TrainingStatusToggle, trainingStatusLabel } from '@/components/admin/TrainingStatus'
 import { AttendanceGrid } from '@/components/AttendanceGrid'
-import { formatCzk, formatDate, nextSundayIso } from '@/lib/format'
+import { formatCzk, formatDate, nextSundayIso, plural } from '@/lib/format'
 
 type Player = { id: number; name: string }
 
@@ -73,7 +73,8 @@ export function TrainingsSection({
               <span className="flex flex-col">
                 <span className="text-body text-chalk">{formatDate(training.date)}</span>
                 <span className="text-meta text-chalk-dim">
-                  {trainingStatusLabel[training.status]}, {training.heads} hlav,{' '}
+                  {trainingStatusLabel[training.status]}, {training.heads}{' '}
+                  {plural(training.heads, 'hráč', 'hráči', 'hráčů')},{' '}
                   {formatCzk(training.priceCzk)} za halu
                 </span>
               </span>

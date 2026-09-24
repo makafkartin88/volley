@@ -1,7 +1,7 @@
 'use client'
 
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { formatCzk, formatDate } from '@/lib/format'
+import { formatCzk, formatDate, plural } from '@/lib/format'
 
 /** Zrušený trénink má `heads === null` — v čáře z něj bude mezera, ne nula. */
 export type ChartPoint = {
@@ -110,7 +110,7 @@ export function AttendanceChart({ points }: { points: ChartPoint[] }) {
           <dd className="display text-body text-chalk">{formatDate(readout.date)}</dd>
         </div>
         <div className="text-right">
-          <dt className="text-meta text-chalk-dim">Hlav</dt>
+          <dt className="text-meta text-chalk-dim">Hráčů</dt>
           <dd className="display text-body tabular-nums text-chalk">
             {readout.heads ?? 'Nekonal se'}
           </dd>
@@ -126,7 +126,7 @@ export function AttendanceChart({ points }: { points: ChartPoint[] }) {
       <div ref={wrapRef} className="-mx-1 overflow-x-auto px-1">
         <svg
           role="img"
-          aria-label={`Počet hlav na ${points.length} trénincích, od ${formatDate(points[0].date)} do ${formatDate(points[lastIndex].date)}.`}
+          aria-label={`Počet hráčů na ${points.length} trénincích, od ${formatDate(points[0].date)} do ${formatDate(points[lastIndex].date)}.`}
           width={width}
           height={height}
           viewBox={`0 0 ${width} ${height}`}
@@ -251,7 +251,7 @@ export function AttendanceChart({ points }: { points: ChartPoint[] }) {
           <thead>
             <tr className="border-b border-rule text-chalk-dim">
               <th scope="col" className="py-2 font-normal">Trénink</th>
-              <th scope="col" className="py-2 text-right font-normal">Hlav</th>
+              <th scope="col" className="py-2 text-right font-normal">Hráčů</th>
               <th scope="col" className="py-2 text-right font-normal">Na hlavu</th>
             </tr>
           </thead>
@@ -277,5 +277,5 @@ export function AttendanceChart({ points }: { points: ChartPoint[] }) {
 function describe(point: ChartPoint): string {
   if (point.heads === null) return `${formatDate(point.date)}: trénink se nekonal.`
   const price = point.perHead === null ? '' : `, ${formatCzk(point.perHead)} na hlavu`
-  return `${formatDate(point.date)}: ${point.heads} hlav${price}.`
+  return `${formatDate(point.date)}: ${point.heads} ${plural(point.heads, 'hráč', 'hráči', 'hráčů')}${price}.`
 }

@@ -148,7 +148,7 @@ export function AttendanceGrid({
       <div className="flex flex-col gap-4 border-t border-rule pt-3 sm:flex-row sm:items-end sm:justify-between">
         <div className="flex gap-6">
           <div>
-            <div className="text-meta text-chalk-dim">Celkem hlav</div>
+            <div className="text-meta text-chalk-dim">Celkem hráčů</div>
             <div key={heads} className="tick display text-title tabular-nums text-chalk">
               {heads}
             </div>
