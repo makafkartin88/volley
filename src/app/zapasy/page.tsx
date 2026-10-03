@@ -18,6 +18,17 @@ export default async function ZapasyPage() {
     .filter((row) => row.rate.rate !== null)
     .sort((a, b) => (b.rate.rate as number) - (a.rate.rate as number))
 
+  if (matches.length === 0) {
+    return (
+      <div className="flex flex-col gap-8">
+        <PageHeader title="Zápasy" subtitle="Výsledky a úspěšnost týmu i jednotlivců." />
+        <p className="measure text-chalk-dim">
+          Sezóna ještě nezačala. Výsledky z avlka.cz se tu objeví po prvním turnaji.
+        </p>
+      </div>
+    )
+  }
+
   return (
     <div className="flex flex-col gap-8">
       <PageHeader title="Zápasy" subtitle="Výsledky a úspěšnost týmu i jednotlivců." />
@@ -44,10 +55,7 @@ export default async function ZapasyPage() {
       </div>
 
       <section>
-        <h2 className="display border-b border-rule pb-3 text-title">Zápasy</h2>
-        {matches.length === 0 && (
-          <p className="measure py-4 text-chalk-dim">Zatím žádný zápas.</p>
-        )}
+        <h2 className="display border-b border-rule pb-3 text-title">Výsledky</h2>
         {matches.map((match) => {
           const lineup = match.playerIds.map((id) => nameById.get(id) ?? `Hráč #${id}`)
           return (

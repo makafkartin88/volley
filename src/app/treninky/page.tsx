@@ -1,12 +1,13 @@
 import { getAllPlayers, getTrainingsWithAttendance } from '@/db/queries'
 import { PageHeader } from '@/components/PageHeader'
-import { formatCzk, formatDate, plural } from '@/lib/format'
+import { formatCzk, formatDate, plural, todayIso } from '@/lib/format'
 
 export const dynamic = 'force-dynamic'
 
-/** Text pro řádek bez docházky — cesta „nikdo nedorazil“ je jiná než „trénink se ani nekonal“. */
-function whoLabel(cancelled: boolean): string {
-  return cancelled ? '—' : 'Nikdo nedorazil'
+/** Text pro řádek bez docházky: zrušený, ještě nebyl, nebo opravdu nikdo nepřišel. */
+function whoLabel(cancelled: boolean, upcoming: boolean): string {
+  if (cancelled) return '—'
+  return upcoming ? 'Nadcházející' : 'Nikdo nedorazil'
 }
 
 export default async function TreninkyPage() {
@@ -15,6 +16,7 @@ export default async function TreninkyPage() {
     getAllPlayers(),
   ])
   const nameById = new Map(players.map((p) => [p.id, p.name]))
+  const today = todayIso()
 
   return (
     <div className="flex flex-col gap-8">
@@ -30,7 +32,8 @@ export default async function TreninkyPage() {
             const name = nameById.get(a.playerId) ?? `Hráč #${a.playerId}`
             return a.guests > 0 ? `${name} +${a.guests}` : name
           })
-          const whoText = names.length > 0 ? names.join(', ') : whoLabel(cancelled)
+          const upcoming = training.date >= today
+          const whoText = names.length > 0 ? names.join(', ') : whoLabel(cancelled, upcoming)
 
           return (
             <div key={training.id} className="row">
@@ -48,11 +51,13 @@ export default async function TreninkyPage() {
                 <span className="text-meta text-chalk-dim">{whoText}</span>
               </span>
               <span className="text-right text-meta text-chalk-dim">
-                {training.heads} {plural(training.heads, 'hráč', 'hráči', 'hráčů')}
+                {upcoming && training.heads === 0
+                  ? formatCzk(training.priceCzk)
+                  : `${training.heads} ${plural(training.heads, 'hráč', 'hráči', 'hráčů')}`}
                 {!cancelled && training.heads > 0 && (
                   <>
                     <br />
-                    {formatCzk(Math.round(training.priceCzk / training.heads))} / hlava
+                    {formatCzk(Math.ceil(training.priceCzk / training.heads))} / hlava
                   </>
                 )}
               </span>

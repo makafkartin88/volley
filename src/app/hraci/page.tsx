@@ -36,7 +36,7 @@ export default async function HraciPage() {
       id: player.id,
       name: player.name,
       percent: null,
-      detail: 'Zatím bez tréninku',
+      detail: held.length === 0 ? '' : 'Zatím bez tréninku',
     })),
   ]
 
@@ -55,7 +55,11 @@ export default async function HraciPage() {
     <div className="flex flex-col gap-8">
       <PageHeader
         title="Hráči"
-        subtitle={`${active.length} aktivních. Procento je docházka na konané tréninky.`}
+        subtitle={
+          held.length === 0
+            ? `${active.length} aktivních. Docházka se začne počítat po prvním tréninku.`
+            : `${active.length} aktivních. Procento je docházka na konané tréninky.`
+        }
       />
 
       {active.length === 0 ? (

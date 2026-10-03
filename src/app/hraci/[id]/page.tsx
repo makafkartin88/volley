@@ -42,7 +42,7 @@ export default async function HracDetailPage({
   const expenseNotesBySettlement = new Map<number, string[]>()
   for (const expense of allExpenses) {
     if (!expense.playerIds.includes(player.id)) continue
-    const shareCzk = Math.round(expense.amountCzk / expense.playerIds.length)
+    const shareCzk = Math.ceil(expense.amountCzk / expense.playerIds.length)
     const list = expenseNotesBySettlement.get(expense.settlementId) ?? []
     list.push(`${expense.note} (${formatCzk(shareCzk)})`)
     expenseNotesBySettlement.set(expense.settlementId, list)

@@ -7,7 +7,7 @@ import {
 import {
   attendanceRanking, heldTrainings, pastTrainings, perHead,
 } from '@/lib/attendance'
-import { formatCzk, formatDate, plural, todayIso } from '@/lib/format'
+import { formatCzk, plural, todayIso, weekdayOf } from '@/lib/format'
 
 // „Nejbližší trénink“ i hranice mezi historií a budoucností se počítají
 // z aktuálního času, ne z času buildu.
@@ -50,29 +50,36 @@ export default async function Home() {
   return (
     <div className="flex flex-col gap-10">
       <section className="rounded-object bg-ink-raised px-5 py-6">
-        <p className="text-meta text-chalk-dim">Příští trénink</p>
         {upcoming ? (
           <>
+            <p className="text-meta text-chalk-dim">{upcomingLabel(upcoming.date, today)}</p>
             <p className="display mt-2 text-hero leading-none text-chalk">
-              {formatDate(upcoming.date)}
+              {shortDate(upcoming.date)}
             </p>
-            <dl className="mt-4 flex gap-8">
-              <div>
-                <dt className="text-meta text-chalk-dim">Přihlášeno</dt>
-                <dd className="display text-title tabular-nums text-chalk">
-                  {upcoming.heads} {plural(upcoming.heads, 'hráč', 'hráči', 'hráčů')}
-                </dd>
-              </div>
-              <div>
-                <dt className="text-meta text-chalk-dim">Na hlavu</dt>
-                <dd className="display text-title tabular-nums text-chalk">
-                  {upcomingPerHead === null ? '—' : formatCzk(upcomingPerHead)}
-                </dd>
-              </div>
-            </dl>
+            {upcoming.heads > 0 ? (
+              <dl className="mt-4 flex gap-8">
+                <div>
+                  <dt className="text-meta text-chalk-dim">Na tréninku</dt>
+                  <dd className="display text-title tabular-nums text-chalk">
+                    {upcoming.heads} {plural(upcoming.heads, 'hráč', 'hráči', 'hráčů')}
+                  </dd>
+                </div>
+                <div>
+                  <dt className="text-meta text-chalk-dim">Na hlavu</dt>
+                  <dd className="display text-title tabular-nums text-chalk">
+                    {upcomingPerHead === null ? '—' : formatCzk(upcomingPerHead)}
+                  </dd>
+                </div>
+              </dl>
+            ) : (
+              <p className="mt-4 text-meta text-chalk-dim">
+                Hala {formatCzk(upcoming.priceCzk)}, rozpočítá se podle toho, kolik nás přijde.
+              </p>
+            )}
           </>
         ) : (
           <>
+            <p className="text-meta text-chalk-dim">Příští trénink</p>
             <p className="display mt-2 text-title leading-tight text-chalk">
               Zatím žádný termín
             </p>
@@ -124,6 +131,22 @@ export default async function Home() {
       <LastSettlement settlement={closedSettlement} players={players} />
     </div>
   )
+}
+
+const WEEKDAYS = ['neděle', 'pondělí', 'úterý', 'středa', 'čtvrtek', 'pátek', 'sobota']
+
+/** „Dnes, neděle“ / „Zítra, neděle“ / „Příští trénink, neděle“. */
+function upcomingLabel(date: string, today: string): string {
+  const weekday = WEEKDAYS[weekdayOf(date)]
+  if (date === today) return `Dnes, ${weekday}`
+  if (date === todayIso(new Date(Date.now() + 24 * 60 * 60 * 1000))) return `Zítra, ${weekday}`
+  return `Příští trénink, ${weekday}`
+}
+
+/** `"2026-10-04"` → `"4. 10."` — rok je u nejbližšího tréninku zbytečný a hero by zalomil. */
+function shortDate(date: string): string {
+  const [, m, d] = date.split('-').map(Number)
+  return `${d}. ${m}.`
 }
 
 function LastSettlement({

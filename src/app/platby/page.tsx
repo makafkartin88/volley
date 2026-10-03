@@ -1,22 +1,27 @@
 import Link from 'next/link'
 import { PageHeader } from '@/components/PageHeader'
 import { Money } from '@/components/Money'
-import { getAllPlayers, getLatestClosedSettlement } from '@/db/queries'
+import { getAllPlayers, getLatestClosedSettlement, getSettlements } from '@/db/queries'
 
 export const dynamic = 'force-dynamic'
 
 export default async function PlatbyPage() {
-  const [closedSettlement, players] = await Promise.all([
+  const [closedSettlement, players, settlements] = await Promise.all([
     getLatestClosedSettlement(),
     getAllPlayers(),
+    getSettlements(),
   ])
+  const open = settlements.find((s) => s.closedAt === null)
   const nameById = new Map(players.map((p) => [p.id, p.name]))
 
   if (!closedSettlement) {
     return (
       <div className="flex flex-col gap-8">
         <PageHeader title="Platby" />
-        <p className="measure py-4 text-chalk-dim">Zatím není co platit.</p>
+        <p className="measure py-4 text-chalk-dim">
+          Zatím není co platit.
+          {open && ` Vyúčtování „${open.label}“ se uzavře na konci období, pak tu najdeš svou částku i QR kód.`}
+        </p>
       </div>
     )
   }

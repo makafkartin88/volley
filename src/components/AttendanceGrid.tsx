@@ -69,7 +69,7 @@ export function AttendanceGrid({
 
   // Hlavy se počítají z celého výběru, ne z právě viditelných řádků.
   const heads = [...entries.values()].reduce((sum, g) => sum + 1 + g, 0)
-  const perHead = heads > 0 ? Math.round(priceCzk / heads) : null
+  const perHead = heads > 0 ? Math.ceil(priceCzk / heads) : null
 
   const visible = players.filter((p) => playerMatchesQuery(p.name, query))
 

@@ -52,9 +52,11 @@ function PlayerRowLink({ row }: { row: PlayerListRow }) {
           </span>
           <span className="flex items-baseline gap-3">
             <span className="text-meta text-chalk-dim">{row.detail}</span>
-            <span className={`text-body tabular-nums ${dim ? 'text-chalk-dim' : 'text-chalk'}`}>
-              {formatRate(row.percent === null ? null : row.percent / 100)}
-            </span>
+            {row.percent !== null && (
+              <span className={`text-body tabular-nums ${dim ? 'text-chalk-dim' : 'text-chalk'}`}>
+                {formatRate(row.percent / 100)}
+              </span>
+            )}
           </span>
         </span>
         {row.percent !== null && (
