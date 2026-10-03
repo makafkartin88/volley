@@ -93,7 +93,7 @@ export function formatRate(rate: number | null): string {
 
 /** Cena na hlavu, nebo `null` když nikdo nepřišel (dělení nulou). */
 export function perHead(training: TrainingRow): number | null {
-  return training.heads > 0 ? Math.round(training.priceCzk / training.heads) : null
+  return training.heads > 0 ? Math.ceil(training.priceCzk / training.heads) : null
 }
 
 function isoDate(value: Date): string {
