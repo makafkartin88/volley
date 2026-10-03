@@ -1,8 +1,9 @@
 'use client'
 
-import { useEffect, useRef, useState, useTransition } from 'react'
+import { useState, useTransition } from 'react'
 import { createTraining, updateTrainingPrice } from '@/actions/trainings'
 import { AttendanceGrid } from '@/components/AttendanceGrid'
+import { SwipeArrows, SwipeCards, type SwipeCard } from '@/components/admin/SwipeCards'
 import { TrainingStatusToggle } from '@/components/admin/TrainingStatus'
 import { formatCzk, plural, weekdayOf } from '@/lib/format'
 
@@ -22,7 +23,6 @@ export type CarouselTraining = {
 const NEW = 'new' as const
 type Selection = number | typeof NEW
 
-const WEEKDAYS_SHORT = ['Ne', 'Po', 'Út', 'St', 'Čt', 'Pá', 'So']
 const WEEKDAYS = ['Neděle', 'Pondělí', 'Úterý', 'Středa', 'Čtvrtek', 'Pátek', 'Sobota']
 
 function dayMonth(iso: string, today: string): string {
@@ -63,85 +63,53 @@ export function TrainingCarousel({
   const index = Math.max(0, order.indexOf(selected))
   const current = trainings.find((t) => t.id === selected) ?? null
 
-  const stripRef = useRef<HTMLDivElement>(null)
-  const firstScroll = useRef(true)
-  useEffect(() => {
-    const strip = stripRef.current
-    const card = strip?.querySelector<HTMLElement>('[aria-current="true"]')
-    if (!strip || !card) return
-    strip.scrollTo({
-      left: card.offsetLeft - (strip.clientWidth - card.clientWidth) / 2,
-      behavior: firstScroll.current ? 'auto' : 'smooth',
-    })
-    firstScroll.current = false
-  }, [selected])
+  const cards: SwipeCard[] = [
+    ...trainings.map((t) => {
+      const status = cardStatus(t, today)
+      return {
+        key: String(t.id),
+        content: (
+          <>
+            <span className="text-meta text-chalk-dim">{WEEKDAYS[weekdayOf(t.date)]}</span>
+            <span className={`display text-title leading-none ${t.status === 'cancelled' ? 'text-chalk-dim line-through' : 'text-chalk'}`}>
+              {dayMonth(t.date, today)}
+            </span>
+            <span className="flex w-full items-baseline justify-between gap-2 text-meta">
+              <span className={status.loud ? 'text-chalk' : 'text-chalk-dim'}>{status.text}</span>
+              <span className="text-chalk-dim">{formatCzk(t.priceCzk)}</span>
+            </span>
+          </>
+        ),
+      }
+    }),
+    {
+      key: NEW,
+      dashed: true,
+      content: (
+        <>
+          <span className="display text-title leading-none text-chalk">+</span>
+          <span className="text-meta text-chalk-dim">Nový trénink</span>
+        </>
+      ),
+    },
+  ]
 
   return (
     <section className="flex flex-col gap-6">
       <div className="flex flex-col gap-3">
         <div className="flex items-center justify-between gap-4">
           <h1 className="display text-title">Tréninky</h1>
-          <div className="flex gap-2">
-            <button
-              type="button"
-              onClick={() => setSelected(order[index - 1])}
-              disabled={index === 0}
-              aria-label="Předchozí trénink"
-              className="flex h-11 w-11 items-center justify-center border border-rule text-chalk disabled:text-chalk-dim disabled:opacity-40"
-            >
-              ←
-            </button>
-            <button
-              type="button"
-              onClick={() => setSelected(order[index + 1])}
-              disabled={index === order.length - 1}
-              aria-label="Další trénink"
-              className="flex h-11 w-11 items-center justify-center border border-rule text-chalk disabled:text-chalk-dim disabled:opacity-40"
-            >
-              →
-            </button>
-          </div>
+          <SwipeArrows
+            label="trénink"
+            onPrev={index > 0 ? () => setSelected(order[index - 1]) : null}
+            onNext={index < order.length - 1 ? () => setSelected(order[index + 1]) : null}
+          />
         </div>
-
-        <div
-          ref={stripRef}
-          className="-mx-4 flex snap-x snap-mandatory gap-2 overflow-x-auto px-4 pb-1 [scrollbar-width:none]"
-        >
-          {trainings.map((t) => {
-            const active = t.id === selected
-            const status = cardStatus(t, today)
-            return (
-              <button
-                key={t.id}
-                type="button"
-                onClick={() => setSelected(t.id)}
-                aria-current={active}
-                className={`flex w-28 shrink-0 snap-center flex-col items-start border px-3 py-2 text-left ${
-                  active ? 'border-chalk bg-ink-raised' : 'border-rule'
-                }`}
-              >
-                <span className="text-meta text-chalk-dim">{WEEKDAYS_SHORT[weekdayOf(t.date)]}</span>
-                <span className={`display text-body ${t.status === 'cancelled' ? 'text-chalk-dim line-through' : 'text-chalk'}`}>
-                  {dayMonth(t.date, today)}
-                </span>
-                <span className={`text-meta ${status.loud ? 'text-chalk' : 'text-chalk-dim'}`}>
-                  {status.text}
-                </span>
-              </button>
-            )
-          })}
-          <button
-            type="button"
-            onClick={() => setSelected(NEW)}
-            aria-current={selected === NEW}
-            className={`flex w-28 shrink-0 snap-center flex-col items-start justify-center border border-dashed px-3 py-2 text-left ${
-              selected === NEW ? 'border-chalk bg-ink-raised' : 'border-rule'
-            }`}
-          >
-            <span className="display text-title leading-none text-chalk">+</span>
-            <span className="text-meta text-chalk-dim">Nový trénink</span>
-          </button>
-        </div>
+        <SwipeCards
+          cards={cards}
+          selectedKey={String(selected)}
+          onSelect={(key) => setSelected(key === NEW ? NEW : Number(key))}
+        />
       </div>
 
       {current ? (

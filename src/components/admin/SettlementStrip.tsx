@@ -1,7 +1,8 @@
 'use client'
 
-import Link from 'next/link'
-import { useEffect, useRef } from 'react'
+import { useRouter } from 'next/navigation'
+import { useState, useTransition } from 'react'
+import { SwipeArrows, SwipeCards } from '@/components/admin/SwipeCards'
 
 export type StripCard = {
   key: string
@@ -11,74 +12,66 @@ export type StripCard = {
   bottom: string
   /** Stav, který po organizátorovi něco chce — světlejší text. */
   loud?: boolean
-  active: boolean
   dashed?: boolean
 }
 
 /**
- * Vodorovný pás karet vyúčtování — stejný vzhled jako pás tréninků, jen
- * výběr jde přes adresu (`?s=`), protože detail se počítá na serveru.
+ * Pás karet vyúčtování — stejné tažení prstem jako u tréninků. Detail se
+ * počítá na serveru, takže výběr přepíše adresu (`?s=`) a stránka ho dopočítá.
+ * Karta se zvýrazní hned, nečeká na server.
  */
 export function SettlementStrip({
-  title, cards, prevHref, nextHref,
+  title, cards, selectedKey,
 }: {
   title: string
   cards: StripCard[]
-  prevHref: string | null
-  nextHref: string | null
+  selectedKey: string
 }) {
-  const stripRef = useRef<HTMLDivElement>(null)
-  const activeKey = cards.find((card) => card.active)?.key
-  useEffect(() => {
-    const strip = stripRef.current
-    const card = strip?.querySelector<HTMLElement>('[aria-current="true"]')
-    if (!strip || !card) return
-    strip.scrollTo({ left: card.offsetLeft - (strip.clientWidth - card.clientWidth) / 2 })
-  }, [activeKey])
+  const router = useRouter()
+  const [, startTransition] = useTransition()
+  const [selected, setSelected] = useState(selectedKey)
+  const [prevKey, setPrevKey] = useState(selectedKey)
+  if (prevKey !== selectedKey) {
+    setPrevKey(selectedKey)
+    setSelected(selectedKey)
+  }
 
-  const arrow = 'flex h-11 w-11 items-center justify-center border border-rule'
+  function select(key: string) {
+    const card = cards.find((c) => c.key === key)
+    if (!card) return
+    setSelected(key)
+    startTransition(() => router.replace(card.href, { scroll: false }))
+  }
+
+  const index = cards.findIndex((c) => c.key === selected)
 
   return (
     <div className="flex flex-col gap-3">
       <div className="flex items-center justify-between gap-4">
         <h1 className="display text-title">{title}</h1>
-        <div className="flex gap-2">
-          {prevHref ? (
-            <Link href={prevHref} replace scroll={false} aria-label="Předchozí období" className={`${arrow} text-chalk`}>←</Link>
-          ) : (
-            <span aria-hidden="true" className={`${arrow} text-chalk-dim opacity-40`}>←</span>
-          )}
-          {nextHref ? (
-            <Link href={nextHref} replace scroll={false} aria-label="Další období" className={`${arrow} text-chalk`}>→</Link>
-          ) : (
-            <span aria-hidden="true" className={`${arrow} text-chalk-dim opacity-40`}>→</span>
-          )}
-        </div>
+        <SwipeArrows
+          label="období"
+          onPrev={index > 0 ? () => select(cards[index - 1].key) : null}
+          onNext={index < cards.length - 1 ? () => select(cards[index + 1].key) : null}
+        />
       </div>
-
-      <div
-        ref={stripRef}
-        className="-mx-4 flex snap-x snap-mandatory gap-2 overflow-x-auto px-4 pb-1 [scrollbar-width:none]"
-      >
-        {cards.map((card) => (
-          <Link
-            key={card.key}
-            href={card.href}
-            replace
-            scroll={false}
-            aria-current={card.active}
-            className={`flex w-36 shrink-0 snap-center flex-col items-start border px-3 py-2 text-left ${
-              card.dashed ? 'border-dashed' : ''
-            } ${card.active ? 'border-chalk bg-ink-raised' : 'border-rule'}`}
-          >
-            <span className="text-meta text-chalk-dim">{card.top}</span>
-            <span className="display text-body leading-snug text-chalk">{card.main}</span>
-            <span className={`text-meta ${card.loud ? 'text-chalk' : 'text-chalk-dim'}`}>
-              {card.bottom}
-            </span>
-          </Link>
-        ))}
-      </div>
+      <SwipeCards
+        selectedKey={selected}
+        onSelect={select}
+        cards={cards.map((card) => ({
+          key: card.key,
+          dashed: card.dashed,
+          content: (
+            <>
+              <span className="text-meta text-chalk-dim">{card.top}</span>
+              <span className="display text-title leading-tight text-chalk">{card.main}</span>
+              <span className={`text-meta ${card.loud ? 'text-chalk' : 'text-chalk-dim'}`}>
+                {card.bottom}
+              </span>
+            </>
+          ),
+        }))}
+      />
     </div>
   )
 }

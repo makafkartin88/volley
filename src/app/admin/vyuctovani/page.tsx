@@ -48,8 +48,6 @@ export default async function AdminVyuctovaniPage({ searchParams }: PageProps<'/
   const selected: number | typeof NEW = requested ?? fallback?.settlement.id ?? NEW
 
   const href = (key: number | typeof NEW) => `/admin/vyuctovani?s=${key}`
-  const order: (number | typeof NEW)[] = [...asc.map((r) => r.settlement.id), NEW]
-  const index = order.indexOf(selected)
 
   const cards: StripCard[] = [
     ...asc.map(({ settlement, items }) => {
@@ -66,16 +64,14 @@ export default async function AdminVyuctovaniPage({ searchParams }: PageProps<'/
         main: settlement.label,
         bottom,
         loud: settlement.closedAt !== null && paid < items.length,
-        active: settlement.id === selected,
       }
     }),
     {
       key: NEW,
       href: href(NEW),
-      top: '+',
-      main: 'Nové období',
+      top: '',
+      main: '+ Nové období',
       bottom: '',
-      active: selected === NEW,
       dashed: true,
     },
   ]
@@ -89,8 +85,7 @@ export default async function AdminVyuctovaniPage({ searchParams }: PageProps<'/
       <SettlementStrip
         title="Vyúčtování"
         cards={cards}
-        prevHref={index > 0 ? href(order[index - 1]) : null}
-        nextHref={index < order.length - 1 ? href(order[index + 1]) : null}
+        selectedKey={String(selected)}
       />
       {current ? (
         <SettlementDetail
