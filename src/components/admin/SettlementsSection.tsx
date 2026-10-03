@@ -3,9 +3,9 @@ import {
 } from '@/actions/settlements'
 import { ExpenseForm } from '@/components/admin/ExpenseForm'
 import { Money } from '@/components/Money'
-import { getSettlementDetail, loadSettlementExpenses, loadTrainingInputs } from '@/db/queries'
+import { getSettlementDetail, loadSettlementExpenses, loadTrainingBreakdownInputs } from '@/db/queries'
 import { calculateSettlement } from '@/domain/settlement'
-import { formatDate } from '@/lib/format'
+import { formatDate, todayIso } from '@/lib/format'
 
 export type SettlementRow = {
   id: number
@@ -18,26 +18,22 @@ export type SettlementRow = {
 const inputClass =
   'mt-1 w-full border border-chalk-dim bg-transparent px-3 py-2 text-body text-chalk placeholder:text-chalk-dim'
 
-/** „1 rozpracované“, „2 rozpracovaná“, „5 rozpracovaných“. Pro podtitulek stránky. */
-export function openLabel(n: number): string {
-  if (n === 1) return '1 rozpracované'
-  if (n < 5) return `${n} rozpracovaná`
-  return `${n} rozpracovaných`
-}
-
 type Player = { id: number; name: string }
 
-export function SettlementsSection({
-  settlements,
-  nameById,
-  activePlayers,
+/** Formulář na nové období, předvyplněný měsícem po posledním vyúčtování. */
+export function NewSettlementForm({
+  defaults,
 }: {
-  settlements: SettlementRow[]
-  nameById: Map<number, string>
-  activePlayers: Player[]
+  defaults: { label: string; start: string; end: string }
 }) {
   return (
     <div className="flex flex-col gap-6">
+      <header className="border-b border-rule pb-3">
+        <h2 className="display text-title leading-tight">Nové období</h2>
+        <p className="mt-1 text-meta text-chalk-dim">
+          Každý měsíc se zakládá sám prvního dne. Ručně jen mimořádné období.
+        </p>
+      </header>
       <form action={createSettlement} className="flex flex-col gap-3">
         <label>
           <span className="text-meta text-chalk-dim">Název období</span>
@@ -46,58 +42,58 @@ export function SettlementsSection({
             name="label"
             required
             maxLength={60}
-            placeholder="Např. Září 2026"
+            defaultValue={defaults.label}
             className={inputClass}
           />
         </label>
-        <div className="flex flex-col gap-3 sm:flex-row">
+        <div className="flex gap-3">
           <label className="flex-1">
             <span className="text-meta text-chalk-dim">Od</span>
-            <input type="date" name="periodStart" required className={inputClass} />
+            <input type="date" name="periodStart" required defaultValue={defaults.start} className={inputClass} />
           </label>
           <label className="flex-1">
             <span className="text-meta text-chalk-dim">Do</span>
-            <input type="date" name="periodEnd" required className={inputClass} />
+            <input type="date" name="periodEnd" required defaultValue={defaults.end} className={inputClass} />
           </label>
         </div>
-        <button type="submit" className="btn-quiet self-start">
+        <button type="submit" className="btn-primary self-start">
           Založit období
         </button>
       </form>
+    </div>
+  )
+}
 
-      <section className="flex flex-col">
-        {settlements.length === 0 && (
-          <p className="measure py-4 text-chalk-dim">Zatím žádné období. Založ první.</p>
-        )}
-        {settlements.map((settlement) => (
-          <details key={settlement.id} className="border-b border-rule">
-            <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between gap-4 py-3">
-              <span className="flex flex-col">
-                <span className="text-body text-chalk">{settlement.label}</span>
-                <span className="text-meta text-chalk-dim">
-                  {formatDate(settlement.periodStart)} – {formatDate(settlement.periodEnd)}
-                </span>
-              </span>
-              <span className="text-meta text-chalk-dim">
-                {settlement.closedAt ? 'Uzavřeno' : 'Koncept'}
-              </span>
-            </summary>
-            <div className="pt-2 pb-4">
-              {settlement.closedAt ? (
-                <ClosedView settlementId={settlement.id} nameById={nameById} />
-              ) : (
-                <DraftView
-                  settlementId={settlement.id}
-                  periodStart={settlement.periodStart}
-                  periodEnd={settlement.periodEnd}
-                  nameById={nameById}
-                  activePlayers={activePlayers}
-                />
-              )}
-            </div>
-          </details>
-        ))}
-      </section>
+/** Detail jednoho vyúčtování — živý koncept, nebo uzavřené s platbami. */
+export function SettlementDetail({
+  settlement,
+  nameById,
+  activePlayers,
+}: {
+  settlement: SettlementRow
+  nameById: Map<number, string>
+  activePlayers: Player[]
+}) {
+  return (
+    <div className="flex flex-col gap-6">
+      <header className="border-b border-rule pb-3">
+        <h2 className="display text-title leading-tight">{settlement.label}</h2>
+        <p className="mt-1 text-meta text-chalk-dim">
+          {formatDate(settlement.periodStart)} – {formatDate(settlement.periodEnd)},{' '}
+          {settlement.closedAt ? 'uzavřené' : 'rozpracované, částky se přepočítávají živě'}
+        </p>
+      </header>
+      {settlement.closedAt ? (
+        <ClosedView settlementId={settlement.id} nameById={nameById} />
+      ) : (
+        <DraftView
+          settlementId={settlement.id}
+          periodStart={settlement.periodStart}
+          periodEnd={settlement.periodEnd}
+          nameById={nameById}
+          activePlayers={activePlayers}
+        />
+      )}
     </div>
   )
 }
@@ -161,19 +157,36 @@ async function DraftView({
   activePlayers: Player[]
 }) {
   const [inputs, expenses] = await Promise.all([
-    loadTrainingInputs(periodStart, periodEnd),
+    loadTrainingBreakdownInputs(periodStart, periodEnd),
     loadSettlementExpenses(settlementId),
   ])
   const result = calculateSettlement(inputs, expenses)
 
+  // Budoucí trénink bez docházky není chyba — jen ještě nebyl.
+  const today = todayIso()
+  const skipped = inputs.filter((t) => result.skippedTrainingIds.includes(t.id))
+  const missing = skipped.filter((t) => t.date < today).length
+  const upcoming = skipped.length - missing
+
   return (
     <div className="flex flex-col gap-6">
-      {result.skippedTrainingIds.length > 0 && (
+      {missing > 0 && (
         <div className="border border-chalk-dim px-3 py-2 text-meta text-chalk-dim">
-          {result.skippedTrainingIds.length === 1
+          {missing === 1
             ? 'Jeden trénink proběhl, ale nemá zadanou docházku — nezapočítal se do vyúčtování.'
-            : `${result.skippedTrainingIds.length} tréninky proběhly, ale nemají zadanou docházku — nezapočítaly se do vyúčtování.`}
+            : missing < 5
+              ? `${missing} tréninky proběhly, ale nemají zadanou docházku — nezapočítaly se do vyúčtování.`
+              : `${missing} tréninků proběhlo bez zadané docházky — nezapočítaly se do vyúčtování.`}
         </div>
+      )}
+      {upcoming > 0 && (
+        <p className="text-meta text-chalk-dim">
+          {upcoming === 1
+            ? 'V období je ještě jeden nadcházející trénink.'
+            : upcoming < 5
+              ? `V období jsou ještě ${upcoming} nadcházející tréninky.`
+              : `V období je ještě ${upcoming} nadcházejících tréninků.`}
+        </p>
       )}
       {result.skippedExpenseIds.length > 0 && (
         <div className="border border-chalk-dim px-3 py-2 text-meta text-chalk-dim">

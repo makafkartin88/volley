@@ -2,6 +2,7 @@
 
 import { and, eq, gte, lte } from 'drizzle-orm'
 import { revalidatePath } from 'next/cache'
+import { redirect } from 'next/navigation'
 import { z } from 'zod'
 import { db } from '@/db'
 import { settlements, settlementItems, settlementExpenses, settlementExpenseParticipants } from '@/db/schema'
@@ -29,9 +30,11 @@ export async function createSettlement(formData: FormData) {
     throw new Error(`Období se překrývá s existujícím vyúčtováním "${overlapping.label}".`)
   }
 
-  await db.insert(settlements).values({ label, periodStart, periodEnd })
+  const [created] = await db.insert(settlements).values({ label, periodStart, periodEnd })
+    .returning({ id: settlements.id })
   revalidatePath('/admin')
   revalidatePath('/admin/vyuctovani')
+  redirect(`/admin/vyuctovani?s=${created.id}`)
 }
 
 /**

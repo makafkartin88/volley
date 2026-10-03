@@ -85,7 +85,7 @@ export default async function AdminPage({ searchParams }: PageProps<'/admin'>) {
               </Link>
             ))}
             {openSettlements.map((settlement) => (
-              <Link key={settlement.id} href="/admin/vyuctovani" className="row">
+              <Link key={settlement.id} href={`/admin/vyuctovani?s=${settlement.id}`} className="row">
                 <span className="text-body text-chalk">
                   Vyúčtování „{settlement.label}“ je rozpracované
                 </span>
@@ -93,7 +93,7 @@ export default async function AdminPage({ searchParams }: PageProps<'/admin'>) {
               </Link>
             ))}
             {unpaid > 0 && closed && (
-              <Link href="/admin/vyuctovani" className="row">
+              <Link href={`/admin/vyuctovani?s=${closed.settlement.id}`} className="row">
                 <span className="text-body text-chalk">
                   {unpaid} {plural(unpaid, 'hráč', 'hráči', 'hráčů')}{' '}
                   {plural(unpaid, 'ještě nezaplatil', 'ještě nezaplatili', 'ještě nezaplatilo')}{' '}
